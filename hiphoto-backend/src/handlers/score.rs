@@ -7,7 +7,7 @@ use sqlx::SqlitePool;
 use std::collections::HashMap;
 
 use crate::error::{AppError, Result};
-use crate::middleware::auth::AuthUser;
+use crate::services::auth::AuthUser;
 use crate::models::{
     Score, ScoreResponse, SubmitScoreRequest, ScoreRound, ScoreRoundResponse,
     ScoreBoardEntry, Photo,
@@ -166,7 +166,7 @@ pub async fn get_scoreboard(
     .fetch_optional(&pool)
     .await?;
 
-    let round_number = match round {
+    let round_number = match &round {
         Some(r) => r.round_number,
         None => 1,
     };

@@ -1,4 +1,4 @@
-=== src/models/room.rs ===
+
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use uuid::Uuid;

@@ -1,4 +1,3 @@
-=== src/models/mod.rs ===
 pub mod user;
 pub mod room;
 pub mod photo;
@@ -10,5 +9,3 @@ pub use room::*;
 pub use photo::*;
 pub use tag::*;
 pub use score::*;
-
-

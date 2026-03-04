@@ -7,7 +7,7 @@ use sqlx::SqlitePool;
 use serde_json::json;
 
 use crate::error::{AppError, Result};
-use crate::middleware::auth::AuthUser;
+use crate::services::auth::AuthUser;
 use crate::models::{
     CreateRoomRequest, UpdateRoomRequest, JoinRoomRequest,
     Room, RoomMember, RoomResponse, RoomMemberResponse, ScoringCriteria,

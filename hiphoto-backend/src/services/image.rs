@@ -1,6 +1,6 @@
 use crate::error::{AppError, Result};
 use base64::{engine::general_purpose::STANDARD, Engine as _};
-use image::{imageops::FilterType, DynamicImage, ImageBuffer};
+use image::{imageops::FilterType, DynamicImage, ImageBuffer, GenericImageView};
 
 pub struct ProcessedImage {
     pub image_base64: String,
@@ -54,20 +54,12 @@ pub fn process_image(
     // 编码为 JPEG
     let mut main_buffer = Vec::new();
     resized
-        .to_rgb8()
-        .save(
-            &mut std::io::Cursor::new(&mut main_buffer),
-            image::ImageFormat::Jpeg,
-        )
+        .write_to(&mut std::io::Cursor::new(&mut main_buffer), image::ImageFormat::Jpeg)
         .map_err(|e| AppError::Image(format!("Image encode failed: {}", e)))?;
 
     let mut thumb_buffer = Vec::new();
     thumb
-        .to_rgb8()
-        .save(
-            &mut std::io::Cursor::new(&mut thumb_buffer),
-            image::ImageFormat::Jpeg,
-        )
+        .write_to(&mut std::io::Cursor::new(&mut thumb_buffer), image::ImageFormat::Jpeg)
         .map_err(|e| AppError::Image(format!("Thumbnail encode failed: {}", e)))?;
 
     Ok(ProcessedImage {

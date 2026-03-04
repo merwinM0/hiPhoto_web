@@ -1,4 +1,3 @@
-=== src/error.rs ===
 use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
@@ -57,4 +56,3 @@ impl IntoResponse for AppError {
 }
 
 pub type Result<T> = std::result::Result<T, AppError>;
-

@@ -7,7 +7,7 @@ use axum::{
 use sqlx::SqlitePool;
 
 use crate::error::{AppError, Result};
-use crate::middleware::auth::AuthUser;
+use crate::services::auth::AuthUser;
 use crate::models::{CreateTagRequest, Tag, TagResponse, Photo};
 
 pub async fn create_tag(

@@ -6,7 +6,7 @@ use axum::{
 use sqlx::SqlitePool;
 
 use crate::error::Result;
-use crate::middleware::auth::AuthUser;
+use crate::services::auth::AuthUser;
 use crate::models::{UpdateProfileRequest, User, UserResponse};
 
 pub async fn get_profile(

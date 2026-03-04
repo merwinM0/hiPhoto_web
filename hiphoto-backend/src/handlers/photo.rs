@@ -7,7 +7,7 @@ use sqlx::SqlitePool;
 
 use crate::config::Config;
 use crate::error::{AppError, Result};
-use crate::middleware::auth::AuthUser;
+use crate::services::auth::AuthUser;
 use crate::models::{Photo, PhotoResponse, PhotoDetailResponse, UploadPhotoRequest, Tag, TagResponse};
 use crate::services::image::process_image;
 

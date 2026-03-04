@@ -1,5 +1,9 @@
 import axios from 'axios'
 import { useAuthStore } from '../stores/authStore'
+import { authApi, userApi } from './auth'
+import { photoApi, tagApi } from './photo'
+import { roomApi } from './room'
+import { scoreApi } from './score'
 
 const api = axios.create({
   baseURL: '/api',
@@ -30,3 +34,4 @@ api.interceptors.response.use(
 )
 
 export default api
+export { authApi, userApi, photoApi, tagApi, roomApi, scoreApi }
