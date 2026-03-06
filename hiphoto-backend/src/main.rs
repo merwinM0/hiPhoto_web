@@ -1,7 +1,7 @@
 use axum::{
-    middleware::from_fn_with_state,
-    routing::{get, post, put, delete},
     Router,
+    middleware::from_fn_with_state,
+    routing::{delete, get, post, put},
 };
 use sqlx::SqlitePool;
 use tower_http::cors::{Any, CorsLayer};
@@ -10,22 +10,20 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 mod config;
 mod db;
 mod error;
-mod models;
 mod handlers;
-mod services;
 mod middleware;
+mod models;
+mod services;
 mod utils;
 
 use config::Config;
-use handlers::{auth, user, room, photo, score, tag};
+use handlers::{auth, photo, room, score, tag, user};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     // 初始化日志
     tracing_subscriber::fmt()
-        .with_env_filter(
-            std::env::var("RUST_LOG").unwrap_or_else(|_| "info".into()),
-        )
+        .with_env_filter(std::env::var("RUST_LOG").unwrap_or_else(|_| "info".into()))
         .init();
 
     // 加载配置
@@ -40,7 +38,7 @@ async fn main() -> anyhow::Result<()> {
     let app = create_app(pool, config);
 
     // 启动服务器
-    let addr = "0.0.0.0:3000";
+    let addr = "0.0.0.0:8000";
     let listener = tokio::net::TcpListener::bind(addr).await?;
     tracing::info!("Server running on http://{}", addr);
 
@@ -70,7 +68,10 @@ fn create_app(pool: SqlitePool, config: Config) -> Router {
         .route("/api/rooms/:room_id", put(room::update_room))
         .route("/api/rooms/join", post(room::join_room))
         .route("/api/rooms/:room_id/members", get(room::get_room_members))
-        .route("/api/rooms/:room_id/members/:user_id", delete(room::kick_member))
+        .route(
+            "/api/rooms/:room_id/members/:user_id",
+            delete(room::kick_member),
+        )
         .route("/api/rooms/:room_id/leave", post(room::leave_room))
         // 图片相关
         .route("/api/rooms/:room_id/photos", get(photo::get_room_photos))
@@ -85,8 +86,14 @@ fn create_app(pool: SqlitePool, config: Config) -> Router {
         .route("/api/scores", post(score::submit_score))
         .route("/api/rooms/:room_id/scoreboard", get(score::get_scoreboard))
         .route("/api/rooms/:room_id/end-round", post(score::end_round))
-        .route("/api/rooms/:room_id/new-round", post(score::start_new_round))
-        .layer(from_fn_with_state(config.clone(), crate::services::auth::auth_middleware))
+        .route(
+            "/api/rooms/:room_id/new-round",
+            post(score::start_new_round),
+        )
+        .layer(from_fn_with_state(
+            config.clone(),
+            crate::services::auth::auth_middleware,
+        ))
         .with_state((pool.clone(), config.clone()));
 
     // 合并路由
