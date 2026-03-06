@@ -22,8 +22,16 @@ export default function Login() {
     try {
       const response = await authApi.login(email, password)
       console.log(response)
-      if (response.token && response.user) {
-        setAuth(response.token, response.user)
+      if (response.data?.token && response.data?.user_id) {
+        // 创建一个临时的user对象，稍后可以通过userApi.getProfile获取完整信息
+        const tempUser = {
+          id: response.data.user_id,
+          email: response.data.email,
+          username: null,
+          bio: null,
+          is_verified: false
+        }
+        setAuth(response.data.token, tempUser)
         navigate(from, { replace: true })
       }
     } catch (err: any) {

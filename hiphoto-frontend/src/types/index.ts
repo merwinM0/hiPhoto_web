@@ -110,5 +110,7 @@ export interface ApiResponse<T> {
 
 export interface AuthResponse {
   token: string
-  user: User
+  user_id: string
+  email: string
+  message: string
 }
