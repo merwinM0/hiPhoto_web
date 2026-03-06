@@ -50,6 +50,11 @@ pub struct VerifyEmailRequest {
 }
 
 #[derive(Debug, Deserialize)]
+pub struct ResendVerificationRequest {
+    pub email: String,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct UpdateProfileRequest {
     pub username: Option<String>,
     pub bio: Option<String>,
