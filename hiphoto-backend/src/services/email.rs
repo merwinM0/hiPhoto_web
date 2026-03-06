@@ -142,23 +142,39 @@ impl EmailService {
             self.config.smtp_password.clone(),
         );
 
-        // 根据配置选择连接方式
-        let mailer_builder = if self.config.smtp_require_tls {
+        // 根据端口和配置选择连接方式
+        let mailer = if self.config.smtp_port == 465 {
+            // 端口465通常使用SSL/TLS
+            tracing::debug!("Using SSL/TLS for SMTP connection (port 465)");
+            SmtpTransport::relay(&self.config.smtp_host)
+                .map_err(|e| AppError::Email(format!("SMTP relay failed: {}", e)))?
+                .port(465)
+                .credentials(creds)
+                .timeout(Some(std::time::Duration::from_secs(
+                    self.config.smtp_timeout,
+                )))
+                .build()
+        } else if self.config.smtp_require_tls {
+            // 其他端口（如587）使用STARTTLS
             tracing::debug!("Using STARTTLS for SMTP connection");
             SmtpTransport::starttls_relay(&self.config.smtp_host)
+                .map_err(|e| AppError::Email(format!("SMTP STARTTLS failed: {}", e)))?
+                .credentials(creds)
+                .timeout(Some(std::time::Duration::from_secs(
+                    self.config.smtp_timeout,
+                )))
+                .build()
         } else {
+            // 不使用TLS
             tracing::debug!("Using plain connection (no TLS)");
             SmtpTransport::relay(&self.config.smtp_host)
+                .map_err(|e| AppError::Email(format!("SMTP relay failed: {}", e)))?
+                .credentials(creds)
+                .timeout(Some(std::time::Duration::from_secs(
+                    self.config.smtp_timeout,
+                )))
+                .build()
         };
-
-        let mailer = mailer_builder
-            .map_err(|e| AppError::Email(format!("SMTP connection failed: {}", e)))?
-            .credentials(creds)
-            .port(self.config.smtp_port)
-            .timeout(Some(std::time::Duration::from_secs(
-                self.config.smtp_timeout,
-            )))
-            .build();
 
         // 添加重试机制
         let mut last_error = None;

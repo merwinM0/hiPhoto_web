@@ -101,59 +101,28 @@ warning: field `email` is never read
    = note: `AuthUser` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
 
 warning: associated function `with_transport` is never used
-  --> src/services/email.rs:55:12
+  --> src/services/email.rs:58:12
    |
 27 | impl EmailService {
    | ----------------- associated function in this implementation
 ...
-55 |     pub fn with_transport(config: Config, transport: EmailTransport) -> Self {
+58 |     pub fn with_transport(config: Config, transport: EmailTransport) -> Self {
    |            ^^^^^^^^^^^^^^
 
 warning: function `send_verification_email` is never used
-   --> src/services/email.rs:241:14
+   --> src/services/email.rs:278:14
     |
-241 | pub async fn send_verification_email(
+278 | pub async fn send_verification_email(email: &str, code: &str, config: &Config) -> Result<()> {
     |              ^^^^^^^^^^^^^^^^^^^^^^^
 
 warning: `hiphoto-backend` (bin "hiphoto-backend") generated 14 warnings (6 duplicates) (run `cargo fix --bin "hiphoto-backend"` to apply 3 suggestions)
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.13s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.14s
      Running `target/debug/hiphoto-backend`
-[2m2026-03-06T06:00:21.137327Z[0m [32m INFO[0m [2mhiphoto_backend[0m[2m:[0m Loaded configuration
-[2m2026-03-06T06:00:21.139449Z[0m [32m INFO[0m [2mhiphoto_backend[0m[2m:[0m Database initialized
-[2m2026-03-06T06:00:21.140201Z[0m [32m INFO[0m [2mhiphoto_backend[0m[2m:[0m Server running on http://0.0.0.0:8000
-[2m2026-03-06T06:00:30.204295Z[0m [32m INFO[0m [2mhiphoto_backend::services::email[0m[2m:[0m Email service initialized with transport: Smtp
-[2m2026-03-06T06:00:30.204347Z[0m [32m INFO[0m [2mhiphoto_backend::services::email[0m[2m:[0m Preparing verification email for test8@example.com
-[2m2026-03-06T06:00:30.204999Z[0m [32m INFO[0m [2mhiphoto_backend::services::email[0m[2m:[0m Sending verification email via SMTP
-[2m2026-03-06T06:00:50.303345Z[0m [33m WARN[0m [2mhiphoto_backend::services::email[0m[2m:[0m SMTP send failed (attempt 1), retrying in 2s: response error: incomplete response
-[2m2026-03-06T06:01:12.390019Z[0m [33m WARN[0m [2mhiphoto_backend::services::email[0m[2m:[0m SMTP send failed (attempt 2), retrying in 4s: response error: incomplete response
-[2m2026-03-06T06:01:36.483220Z[0m [33m WARN[0m [2mhiphoto_backend::services::email[0m[2m:[0m SMTP send failed, falling back to console mode: 邮件发送失败: Email send failed after 3 attempts: response error: incomplete response
-[2m2026-03-06T06:01:36.483312Z[0m [32m INFO[0m [2mhiphoto_backend::services::email[0m[2m:[0m Printing verification email to console (fallback mode)
-[EMAIL CONSOLE] =========================================
-[EMAIL CONSOLE] Subject: HiPhoto - 邮箱验证码
-[EMAIL CONSOLE] Verification Code: 291541
-[EMAIL CONSOLE] =========================================
-[2m2026-03-06T06:01:36.483402Z[0m [32m INFO[0m [2mhiphoto_backend::services::email[0m[2m:[0m Verification email processed for test8@example.com
-[2m2026-03-06T06:02:02.967467Z[0m [32m INFO[0m [2mhiphoto_backend::services::email[0m[2m:[0m Email service initialized with transport: Smtp
-[2m2026-03-06T06:02:02.967526Z[0m [32m INFO[0m [2mhiphoto_backend::services::email[0m[2m:[0m Preparing verification email for test9@example.com
-[2m2026-03-06T06:02:02.968296Z[0m [32m INFO[0m [2mhiphoto_backend::services::email[0m[2m:[0m Sending verification email via SMTP
-[2m2026-03-06T06:02:23.065549Z[0m [33m WARN[0m [2mhiphoto_backend::services::email[0m[2m:[0m SMTP send failed (attempt 1), retrying in 2s: response error: incomplete response
-[2m2026-03-06T06:02:45.157895Z[0m [33m WARN[0m [2mhiphoto_backend::services::email[0m[2m:[0m SMTP send failed (attempt 2), retrying in 4s: response error: incomplete response
-[2m2026-03-06T06:03:09.246546Z[0m [33m WARN[0m [2mhiphoto_backend::services::email[0m[2m:[0m SMTP send failed, falling back to console mode: 邮件发送失败: Email send failed after 3 attempts: response error: incomplete response
-[2m2026-03-06T06:03:09.246629Z[0m [32m INFO[0m [2mhiphoto_backend::services::email[0m[2m:[0m Printing verification email to console (fallback mode)
-[EMAIL CONSOLE] =========================================
-[EMAIL CONSOLE] Subject: HiPhoto - 邮箱验证码
-[EMAIL CONSOLE] Verification Code: 857496
-[EMAIL CONSOLE] =========================================
-[2m2026-03-06T06:03:09.246700Z[0m [32m INFO[0m [2mhiphoto_backend::services::email[0m[2m:[0m Verification email processed for test9@example.com
-[2m2026-03-06T06:03:20.847923Z[0m [32m INFO[0m [2mhiphoto_backend::services::email[0m[2m:[0m Email service initialized with transport: Smtp
-[2m2026-03-06T06:03:20.847986Z[0m [32m INFO[0m [2mhiphoto_backend::services::email[0m[2m:[0m Preparing verification email for test9@example.com
-[2m2026-03-06T06:03:20.848778Z[0m [32m INFO[0m [2mhiphoto_backend::services::email[0m[2m:[0m Sending verification email via SMTP
-[2m2026-03-06T06:03:40.942938Z[0m [33m WARN[0m [2mhiphoto_backend::services::email[0m[2m:[0m SMTP send failed (attempt 1), retrying in 2s: response error: incomplete response
-[2m2026-03-06T06:04:03.048660Z[0m [33m WARN[0m [2mhiphoto_backend::services::email[0m[2m:[0m SMTP send failed (attempt 2), retrying in 4s: response error: incomplete response
-[2m2026-03-06T06:04:27.158182Z[0m [33m WARN[0m [2mhiphoto_backend::services::email[0m[2m:[0m SMTP send failed, falling back to console mode: 邮件发送失败: Email send failed after 3 attempts: response error: incomplete response
-[2m2026-03-06T06:04:27.158343Z[0m [32m INFO[0m [2mhiphoto_backend::services::email[0m[2m:[0m Printing verification email to console (fallback mode)
-[EMAIL CONSOLE] =========================================
-[EMAIL CONSOLE] Subject: HiPhoto - 邮箱验证码
-[EMAIL CONSOLE] Verification Code: 823628
-[EMAIL CONSOLE] =========================================
-[2m2026-03-06T06:04:27.158516Z[0m [32m INFO[0m [2mhiphoto_backend::services::email[0m[2m:[0m Verification email processed for test9@example.com
+[2m2026-03-06T07:15:26.548859Z[0m [32m INFO[0m [2mhiphoto_backend[0m[2m:[0m Loaded configuration
+[2m2026-03-06T07:15:26.551344Z[0m [32m INFO[0m [2mhiphoto_backend[0m[2m:[0m Database initialized
+[2m2026-03-06T07:15:26.552119Z[0m [32m INFO[0m [2mhiphoto_backend[0m[2m:[0m Server running on http://0.0.0.0:8000
+[2m2026-03-06T07:15:43.170353Z[0m [32m INFO[0m [2mhiphoto_backend::services::email[0m[2m:[0m Email service initialized with transport: Smtp
+[2m2026-03-06T07:15:43.170395Z[0m [32m INFO[0m [2mhiphoto_backend::services::email[0m[2m:[0m Preparing verification email for test@example.com
+[2m2026-03-06T07:15:43.171070Z[0m [32m INFO[0m [2mhiphoto_backend::services::email[0m[2m:[0m Sending verification email via SMTP
+[2m2026-03-06T07:15:43.704914Z[0m [32m INFO[0m [2mhiphoto_backend::services::email[0m[2m:[0m Email sent successfully via SMTP
+[2m2026-03-06T07:15:43.751508Z[0m [32m INFO[0m [2mhiphoto_backend::services::email[0m[2m:[0m Verification email processed for test@example.com

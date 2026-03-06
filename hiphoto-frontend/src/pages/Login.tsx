@@ -13,7 +13,8 @@ export default function Login() {
   const location = useLocation()
   const setAuth = useAuthStore((state) => state.setAuth)
 
-  const from = (location.state as any)?.from?.pathname || '/rooms'
+  // const from = (location.state as any)?.from?.pathname || '/rooms'
+  const from = (location.state as any)?.from?.pathname || '/'
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
