@@ -1,24 +1,20 @@
-import api from './index'
+import api, { apiCall } from './index'
 import type { ApiResponse, ScoreRound, Score } from '../types'
 
 export const scoreApi = {
   submitScore: async (data: { photo_id: string; criteria_type: string; score: number }): Promise<ApiResponse<Score>> => {
-    const response = await api.post('/scores', data)
-    return response.data
+    return apiCall(api.post('/scores', data))
   },
 
   getScoreboard: async (roomId: string): Promise<ApiResponse<ScoreRound>> => {
-    const response = await api.get(`/rooms/${roomId}/scoreboard`)
-    return response.data
+    return apiCall(api.get(`/rooms/${roomId}/scoreboard`))
   },
 
   endRound: async (roomId: string): Promise<ApiResponse<{ message: string }>> => {
-    const response = await api.post(`/rooms/${roomId}/end-round`)
-    return response.data
+    return apiCall(api.post(`/rooms/${roomId}/end-round`))
   },
 
   startNewRound: async (roomId: string): Promise<ApiResponse<{ message: string; round_number: number }>> => {
-    const response = await api.post(`/rooms/${roomId}/new-round`)
-    return response.data
+    return apiCall(api.post(`/rooms/${roomId}/new-round`))
   },
 }

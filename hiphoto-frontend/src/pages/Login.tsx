@@ -59,7 +59,13 @@ export default function Login() {
         setError('登录响应数据不完整')
       }
     } catch (err: any) {
-      setError(err.response?.data?.error || '登录失败')
+      console.error('Login error:', err)
+      // 处理未捕获的错误
+      if (err.message) {
+        setError(err.message)
+      } else {
+        setError('登录失败')
+      }
     } finally {
       setLoading(false)
     }

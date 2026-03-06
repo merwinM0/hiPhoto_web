@@ -1,43 +1,34 @@
-import api from './index'
-import type { ApiResponse, Photo, PhotoDetail } from '../types'
+import api, { apiCall } from './index'
+import type { ApiResponse, Photo, PhotoDetail, Tag } from '../types'
 
 export const photoApi = {
   getRoomPhotos: async (roomId: string): Promise<ApiResponse<Photo[]>> => {
-    const response = await api.get(`/rooms/${roomId}/photos`)
-    return response.data
+    return apiCall(api.get(`/rooms/${roomId}/photos`))
   },
 
   uploadPhoto: async (roomId: string, imageBase64: string): Promise<ApiResponse<Photo>> => {
-    const response = await api.post(`/rooms/${roomId}/photos`, { image_base64: imageBase64 })
-    return response.data
+    return apiCall(api.post(`/rooms/${roomId}/photos`, { image_base64: imageBase64 }))
   },
 
   getPhoto: async (photoId: string): Promise<ApiResponse<PhotoDetail>> => {
-    const response = await api.get(`/photos/${photoId}`)
-    return response.data
+    return apiCall(api.get(`/photos/${photoId}`))
   },
 
   deletePhoto: async (photoId: string): Promise<ApiResponse<{ message: string }>> => {
-    const response = await api.delete(`/photos/${photoId}`)
-    return response.data
+    return apiCall(api.delete(`/photos/${photoId}`))
   },
 }
 
 export const tagApi = {
   createTag: async (data: { photo_id: string; x: number; y: number; content: string }): Promise<ApiResponse<Tag>> => {
-    const response = await api.post('/tags', data)
-    return response.data
+    return apiCall(api.post('/tags', data))
   },
 
   deleteTag: async (tagId: string): Promise<ApiResponse<{ message: string }>> => {
-    const response = await api.delete(`/tags/${tagId}`)
-    return response.data
+    return apiCall(api.delete(`/tags/${tagId}`))
   },
 
   getPhotoTags: async (photoId: string): Promise<ApiResponse<Tag[]>> => {
-    const response = await api.get(`/photos/${photoId}/tags`)
-    return response.data
+    return apiCall(api.get(`/photos/${photoId}/tags`))
   },
 }
-
-import type { Tag } from '../types'
