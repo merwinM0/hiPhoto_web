@@ -4,6 +4,7 @@ use axum::{
     Json,
 };
 use sqlx::SqlitePool;
+use crate::config::Config;
 use std::collections::HashMap;
 
 use crate::error::{AppError, Result};
@@ -14,7 +15,7 @@ use crate::models::{
 };
 
 pub async fn submit_score(
-    State(pool): State<SqlitePool>,
+    State((pool, _config)): State<(SqlitePool, Config)>,
     Extension(auth_user): Extension<AuthUser>,
     Json(payload): Json<SubmitScoreRequest>,
 ) -> Result<Json<ScoreResponse>> {
@@ -141,7 +142,7 @@ pub async fn submit_score(
 }
 
 pub async fn get_scoreboard(
-    State(pool): State<SqlitePool>,
+    State((pool, _config)): State<(SqlitePool, Config)>,
     Extension(auth_user): Extension<AuthUser>,
     Path(room_id): Path<String>,
 ) -> Result<Json<ScoreRoundResponse>> {
@@ -235,7 +236,7 @@ pub async fn get_scoreboard(
 }
 
 pub async fn end_round(
-    State(pool): State<SqlitePool>,
+    State((pool, _config)): State<(SqlitePool, Config)>,
     Extension(auth_user): Extension<AuthUser>,
     Path(room_id): Path<String>,
 ) -> Result<Json<serde_json::Value>> {
@@ -266,7 +267,7 @@ pub async fn end_round(
 }
 
 pub async fn start_new_round(
-    State(pool): State<SqlitePool>,
+    State((pool, _config)): State<(SqlitePool, Config)>,
     Extension(auth_user): Extension<AuthUser>,
     Path(room_id): Path<String>,
 ) -> Result<Json<serde_json::Value>> {

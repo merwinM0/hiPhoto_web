@@ -12,8 +12,7 @@ use crate::models::{Photo, PhotoResponse, PhotoDetailResponse, UploadPhotoReques
 use crate::services::image::process_image;
 
 pub async fn upload_photo(
-    State(pool): State<SqlitePool>,
-    State(config): State<Config>,
+    State((pool, config)): State<(SqlitePool, Config)>,
     Extension(auth_user): Extension<AuthUser>,
     Path(room_id): Path<String>,
     Json(payload): Json<UploadPhotoRequest>,
@@ -107,7 +106,7 @@ pub async fn upload_photo(
 }
 
 pub async fn get_room_photos(
-    State(pool): State<SqlitePool>,
+    State((pool, _config)): State<(SqlitePool, Config)>,
     Extension(auth_user): Extension<AuthUser>,
     Path(room_id): Path<String>,
 ) -> Result<Json<Vec<PhotoResponse>>> {
@@ -171,7 +170,7 @@ pub async fn get_room_photos(
 }
 
 pub async fn get_photo(
-    State(pool): State<SqlitePool>,
+    State((pool, _config)): State<(SqlitePool, Config)>,
     Extension(auth_user): Extension<AuthUser>,
     Path(photo_id): Path<String>,
 ) -> Result<Json<PhotoDetailResponse>> {
@@ -251,7 +250,7 @@ pub async fn get_photo(
 }
 
 pub async fn delete_photo(
-    State(pool): State<SqlitePool>,
+    State((pool, _config)): State<(SqlitePool, Config)>,
     Extension(auth_user): Extension<AuthUser>,
     Path(photo_id): Path<String>,
 ) -> Result<Json<serde_json::Value>> {

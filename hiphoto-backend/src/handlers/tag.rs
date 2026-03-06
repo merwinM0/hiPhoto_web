@@ -5,13 +5,14 @@ use axum::{
 };
 
 use sqlx::SqlitePool;
+use crate::config::Config;
 
 use crate::error::{AppError, Result};
 use crate::services::auth::AuthUser;
 use crate::models::{CreateTagRequest, Tag, TagResponse, Photo};
 
 pub async fn create_tag(
-    State(pool): State<SqlitePool>,
+    State((pool, _config)): State<(SqlitePool, Config)>,
     Extension(auth_user): Extension<AuthUser>,
     Json(payload): Json<CreateTagRequest>,
 ) -> Result<Json<TagResponse>> {
@@ -97,7 +98,7 @@ pub async fn create_tag(
 }
 
 pub async fn delete_tag(
-    State(pool): State<SqlitePool>,
+    State((pool, _config)): State<(SqlitePool, Config)>,
     Extension(auth_user): Extension<AuthUser>,
     Path(tag_id): Path<String>,
 ) -> Result<Json<serde_json::Value>> {
@@ -143,7 +144,7 @@ pub async fn delete_tag(
 }
 
 pub async fn get_photo_tags(
-    State(pool): State<SqlitePool>,
+    State((pool, _config)): State<(SqlitePool, Config)>,
     Extension(auth_user): Extension<AuthUser>,
     Path(photo_id): Path<String>,
 ) -> Result<Json<Vec<TagResponse>>> {

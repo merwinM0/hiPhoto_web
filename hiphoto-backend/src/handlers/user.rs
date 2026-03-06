@@ -4,13 +4,14 @@ use axum::{
     Json,
 };
 use sqlx::SqlitePool;
+use crate::config::Config;
 
 use crate::error::Result;
 use crate::services::auth::AuthUser;
 use crate::models::{UpdateProfileRequest, User, UserResponse};
 
 pub async fn get_profile(
-    State(pool): State<SqlitePool>,
+    State((pool, _config)): State<(SqlitePool, Config)>,
     Extension(auth_user): Extension<AuthUser>,
 ) -> Result<Json<UserResponse>> {
     let user = sqlx::query_as::<_, User>(
@@ -24,7 +25,7 @@ pub async fn get_profile(
 }
 
 pub async fn update_profile(
-    State(pool): State<SqlitePool>,
+    State((pool, _config)): State<(SqlitePool, Config)>,
     Extension(auth_user): Extension<AuthUser>,
     Json(payload): Json<UpdateProfileRequest>,
 ) -> Result<Json<UserResponse>> {

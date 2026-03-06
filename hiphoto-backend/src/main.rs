@@ -5,7 +5,7 @@ use axum::{
 };
 use sqlx::SqlitePool;
 use tower_http::cors::{Any, CorsLayer};
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use tracing_subscriber::util::SubscriberInitExt;
 
 mod config;
 mod db;
@@ -22,9 +22,7 @@ use handlers::{auth, photo, room, score, tag, user};
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     // 初始化日志
-    tracing_subscriber::fmt()
-        .with_env_filter(std::env::var("RUST_LOG").unwrap_or_else(|_| "info".into()))
-        .init();
+    tracing_subscriber::fmt::init();
 
     // 加载配置
     let config = Config::from_env()?;

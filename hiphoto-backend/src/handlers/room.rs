@@ -6,6 +6,7 @@ use axum::{
 use sqlx::SqlitePool;
 use serde_json::json;
 
+use crate::config::Config;
 use crate::error::{AppError, Result};
 use crate::services::auth::AuthUser;
 use crate::models::{
@@ -14,7 +15,7 @@ use crate::models::{
 };
 
 pub async fn create_room(
-    State(pool): State<SqlitePool>,
+    State((pool, _config)): State<(SqlitePool, Config)>,
     Extension(auth_user): Extension<AuthUser>,
     Json(payload): Json<CreateRoomRequest>,
 ) -> Result<Json<RoomResponse>> {
@@ -60,7 +61,7 @@ pub async fn create_room(
 }
 
 pub async fn get_rooms(
-    State(pool): State<SqlitePool>,
+    State((pool, _config)): State<(SqlitePool, Config)>,
     Extension(auth_user): Extension<AuthUser>,
 ) -> Result<Json<Vec<RoomResponse>>> {
     let rooms = sqlx::query_as::<_, Room>(
@@ -110,7 +111,7 @@ pub async fn get_rooms(
 }
 
 pub async fn get_room(
-    State(pool): State<SqlitePool>,
+    State((pool, _config)): State<(SqlitePool, Config)>,
     Extension(auth_user): Extension<AuthUser>,
     Path(room_id): Path<String>,
 ) -> Result<Json<RoomResponse>> {
@@ -167,7 +168,7 @@ pub async fn get_room(
 }
 
 pub async fn update_room(
-    State(pool): State<SqlitePool>,
+    State((pool, _config)): State<(SqlitePool, Config)>,
     Extension(auth_user): Extension<AuthUser>,
     Path(room_id): Path<String>,
     Json(payload): Json<UpdateRoomRequest>,
@@ -202,11 +203,11 @@ pub async fn update_room(
     .execute(&pool)
     .await?;
 
-    get_room(State(pool), Extension(auth_user), Path(room_id)).await
+    get_room(State((pool, _config)), Extension(auth_user), Path(room_id)).await
 }
 
 pub async fn join_room(
-    State(pool): State<SqlitePool>,
+    State((pool, _config)): State<(SqlitePool, Config)>,
     Extension(auth_user): Extension<AuthUser>,
     Json(payload): Json<JoinRoomRequest>,
 ) -> Result<Json<RoomResponse>> {
@@ -240,11 +241,11 @@ pub async fn join_room(
     .execute(&pool)
     .await?;
 
-    get_room(State(pool), Extension(auth_user), Path(room.id)).await
+    get_room(State((pool, _config)), Extension(auth_user), Path(room.id)).await
 }
 
 pub async fn get_room_members(
-    State(pool): State<SqlitePool>,
+    State((pool, _config)): State<(SqlitePool, Config)>,
     Extension(auth_user): Extension<AuthUser>,
     Path(room_id): Path<String>,
 ) -> Result<Json<Vec<RoomMemberResponse>>> {
@@ -298,7 +299,7 @@ pub async fn get_room_members(
 }
 
 pub async fn kick_member(
-    State(pool): State<SqlitePool>,
+    State((pool, _config)): State<(SqlitePool, Config)>,
     Extension(auth_user): Extension<AuthUser>,
     Path((room_id, user_id)): Path<(String, String)>,
 ) -> Result<Json<serde_json::Value>> {
@@ -331,7 +332,7 @@ pub async fn kick_member(
 }
 
 pub async fn leave_room(
-    State(pool): State<SqlitePool>,
+    State((pool, _config)): State<(SqlitePool, Config)>,
     Extension(auth_user): Extension<AuthUser>,
     Path(room_id): Path<String>,
 ) -> Result<Json<serde_json::Value>> {
