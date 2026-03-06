@@ -14,25 +14,49 @@ export default function Login() {
   const setAuth = useAuthStore((state) => state.setAuth)
 
   const from = (location.state as any)?.from?.pathname || '/rooms'
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
     setLoading(true)
     try {
       const response = await authApi.login(email, password)
-      console.log(response)
-      if (response.data?.token && response.data?.user_id) {
+      console.log('Login response:', response)
+      
+      // 检查是否有错误
+      if (response.error) {
+        console.error('Login API error:', response.error)
+        setError(response.error)
+        return
+      }
+      
+      // 检查响应数据是否存在
+      if (!response.data) {
+        console.error('Login response missing data:', response)
+        setError('登录响应数据为空')
+        return
+      }
+      
+      const authData = response.data
+      console.log('Auth data:', authData)
+      console.log('Token:', authData.token)
+      console.log('User ID:', authData.user_id)
+      
+      if (authData.token && authData.user_id) {
         // 创建一个临时的user对象，稍后可以通过userApi.getProfile获取完整信息
         const tempUser = {
-          id: response.data.user_id,
-          email: response.data.email,
+          id: authData.user_id,
+          email: authData.email,
           username: null,
           bio: null,
           is_verified: false
         }
-        setAuth(response.data.token, tempUser)
+        console.log('Setting auth with token:', authData.token)
+        setAuth(authData.token, tempUser)
+        console.log('Navigating to:', from)
         navigate(from, { replace: true })
+      } else {
+        console.error('Login response missing token or user_id:', response)
+        setError('登录响应数据不完整')
       }
     } catch (err: any) {
       setError(err.response?.data?.error || '登录失败')
