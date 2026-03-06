@@ -44,16 +44,9 @@ pub async fn register(
     .execute(&pool)
     .await?;
 
-    // 发送验证邮件（在测试环境中打印验证码）
-    // if config.smtp_host == "smtp.example.com" {
-    if config.smtp_host == "smtp.163.com" {
-        println!(
-            "[TEST] Verification code for {}: {}",
-            payload.email, verification_code
-        );
-    } else {
-        email::send_verification_email(&payload.email, &verification_code, &config).await?;
-    }
+    // 使用新的EmailService发送验证邮件
+    let email_service = email::EmailService::new(config.clone());
+    email_service.send_verification_email(&payload.email, &verification_code).await?;
 
     Ok(Json(json!({
         "message": "Registration successful. Please check your email for verification code.",
@@ -181,16 +174,10 @@ pub async fn resend_verification(
                 .execute(&pool)
                 .await?;
 
-            // 发送新的验证邮件（在测试环境中打印验证码）
-            if config.smtp_host == "smtp.example.com" {
-                println!(
-                    "[TEST] New verification code for {}: {}",
-                    payload.email, new_verification_code
-                );
-            } else {
-                email::send_verification_email(&payload.email, &new_verification_code, &config)
-                    .await?;
-            }
+            // 使用新的EmailService发送验证邮件
+            let email_service = email::EmailService::new(config.clone());
+            email_service.send_verification_email(&payload.email, &new_verification_code)
+                .await?;
 
             Ok(Json(json!({
                 "message": "Verification code resent successfully",

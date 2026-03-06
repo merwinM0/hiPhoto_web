@@ -14,6 +14,14 @@ pub struct Config {
     pub max_image_width: u32,
     pub max_image_height: u32,
     pub image_quality: u8,
+    /// 邮件传输模式：smtp, console, mock
+    pub email_transport: String,
+    /// SMTP连接超时（秒）
+    pub smtp_timeout: u64,
+    /// SMTP最大重试次数
+    pub smtp_max_retries: u32,
+    /// 是否启用TLS
+    pub smtp_require_tls: bool,
 }
 
 impl Config {
@@ -51,6 +59,20 @@ impl Config {
                 .unwrap_or_else(|_| "70".to_string())
                 .parse()
                 .unwrap_or(70),
+            email_transport: std::env::var("EMAIL_TRANSPORT")
+                .unwrap_or_else(|_| "auto".to_string()),
+            smtp_timeout: std::env::var("SMTP_TIMEOUT")
+                .unwrap_or_else(|_| "30".to_string())
+                .parse()
+                .unwrap_or(30),
+            smtp_max_retries: std::env::var("SMTP_MAX_RETRIES")
+                .unwrap_or_else(|_| "3".to_string())
+                .parse()
+                .unwrap_or(3),
+            smtp_require_tls: std::env::var("SMTP_REQUIRE_TLS")
+                .unwrap_or_else(|_| "true".to_string())
+                .parse()
+                .unwrap_or(true),
         })
     }
 }

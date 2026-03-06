@@ -19,9 +19,9 @@ export default function Login() {
     e.preventDefault()
     setError(null)
     setLoading(true)
-
     try {
       const response = await authApi.login(email, password)
+      console.log(response)
       if (response.token && response.user) {
         setAuth(response.token, response.user)
         navigate(from, { replace: true })
