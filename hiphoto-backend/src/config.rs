@@ -23,6 +23,10 @@ pub struct Config {
     pub smtp_max_retries: u32,
     /// 是否启用TLS
     pub smtp_require_tls: bool,
+    /// Redis连接URL
+    pub redis_url: String,
+    /// 验证码过期时间（秒）
+    pub verification_code_ttl: i64,
 }
 
 impl Config {
@@ -75,6 +79,12 @@ impl Config {
                 .unwrap_or_else(|_| "true".to_string())
                 .parse()
                 .unwrap_or(true),
+            redis_url: std::env::var("REDIS_URL")
+                .unwrap_or_else(|_| "redis://localhost:6379".to_string()),
+            verification_code_ttl: std::env::var("VERIFICATION_CODE_TTL")
+                .unwrap_or_else(|_| "600".to_string())
+                .parse()
+                .unwrap_or(600),
         })
     }
 }

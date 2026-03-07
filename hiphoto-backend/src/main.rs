@@ -33,8 +33,8 @@ async fn main() -> anyhow::Result<()> {
     let pool = db::init_db(&config.database_url).await?;
     tracing::info!("Database initialized");
 
-    // 启动定时清理任务
-    let _ = cleanup::start_cleanup_task(pool.clone());
+    // 注意：Redis自动处理验证码过期，无需定时清理
+    // cleanup::start_cleanup_task(pool.clone());
 
     // 创建路由
     let app = create_app(pool, config);
