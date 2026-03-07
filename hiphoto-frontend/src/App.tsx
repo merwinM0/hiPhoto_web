@@ -1,5 +1,4 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
-import { useAuthStore } from './stores/authStore'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
 import Home from './pages/Home'
@@ -14,15 +13,16 @@ import PhotoDetail from './pages/PhotoDetail'
 function App() {
   return (
     <Routes>
-      {/* 公开路由 */}
-      <Route path="/" element={<Home />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/verify" element={<VerifyEmail />} />
-      
-      {/* 需要认证的路由 */}
-      <Route element={<ProtectedRoute />}>
-        <Route element={<Layout />}>
+      {/* 所有路由都使用Layout，但公开路由不需要认证 */}
+      <Route element={<Layout />}>
+        {/* 公开路由 */}
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/verify" element={<VerifyEmail />} />
+        
+        {/* 需要认证的路由 */}
+        <Route element={<ProtectedRoute />}>
           <Route path="/profile" element={<Profile />} />
           <Route path="/rooms" element={<RoomList />} />
           <Route path="/rooms/:roomId" element={<RoomDetail />} />
