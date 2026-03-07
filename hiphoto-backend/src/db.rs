@@ -100,5 +100,14 @@ pub async fn init_db(database_url: &str) -> Result<SqlitePool> {
         )
     "#).execute(&pool).await?;
 
+    sqlx::query(r#"
+        CREATE TABLE IF NOT EXISTS verification_codes (
+            email TEXT PRIMARY KEY,
+            code TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            expires_at TEXT NOT NULL
+        )
+    "#).execute(&pool).await?;
+
     Ok(pool)
 }

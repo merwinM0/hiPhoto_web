@@ -18,6 +18,7 @@ mod utils;
 
 use config::Config;
 use handlers::{auth, photo, room, score, tag, user};
+use services::cleanup;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -31,6 +32,9 @@ async fn main() -> anyhow::Result<()> {
     // 初始化数据库
     let pool = db::init_db(&config.database_url).await?;
     tracing::info!("Database initialized");
+
+    // 启动定时清理任务
+    let _ = cleanup::start_cleanup_task(pool.clone());
 
     // 创建路由
     let app = create_app(pool, config);
@@ -48,6 +52,7 @@ async fn main() -> anyhow::Result<()> {
 fn create_app(pool: SqlitePool, config: Config) -> Router {
     // 公开路由（无需认证）
     let public_routes = Router::new()
+        .route("/api/auth/send-code", post(auth::send_verification_code))
         .route("/api/auth/register", post(auth::register))
         .route("/api/auth/verify", post(auth::verify_email))
         .route("/api/auth/login", post(auth::login))

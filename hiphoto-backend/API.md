@@ -2,6 +2,24 @@
 
 ## 认证
 
+### 发送验证码
+- **方法**: POST
+- **端点**: `/api/auth/send-code`
+- **请求头**: `Content-Type: application/json`
+- **Request Body**:
+```json
+{
+  "email": "string"
+}
+```
+- **Response**:
+```json
+{
+  "message": "Verification code sent successfully",
+  "email": "string"
+}
+```
+
 ### 注册
 - **方法**: POST
 - **端点**: `/api/auth/register`
@@ -10,13 +28,14 @@
 ```json
 {
   "email": "string",
-  "password": "string"
+  "password": "string",
+  "code": "string"
 }
 ```
 - **Response**:
 ```json
 {
-  "message": "Registration successful. Please check your email for verification code.",
+  "message": "Registration successful",
   "email": "string",
   "user_id": "string"
 }

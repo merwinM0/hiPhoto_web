@@ -2,8 +2,12 @@ import api, { apiCall } from './index'
 import type { ApiResponse, AuthResponse, User } from '../types'
 
 export const authApi = {
-  register: async (email: string, password: string): Promise<ApiResponse<{ message: string; email: string }>> => {
-    return apiCall(api.post('/auth/register', { email, password }))
+  sendVerificationCode: async (email: string): Promise<ApiResponse<{ message: string; email: string }>> => {
+    return apiCall(api.post('/auth/send-code', { email }))
+  },
+
+  register: async (email: string, password: string, code: string): Promise<ApiResponse<{ message: string; email: string }>> => {
+    return apiCall(api.post('/auth/register', { email, password, code }))
   },
 
   verifyEmail: async (email: string, code: string): Promise<ApiResponse<{ message: string }>> => {

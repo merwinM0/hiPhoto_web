@@ -35,6 +35,12 @@ impl User {
 pub struct RegisterRequest {
     pub email: String,
     pub password: String,
+    pub code: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SendCodeRequest {
+    pub email: String,
 }
 
 #[derive(Debug, Deserialize)]
