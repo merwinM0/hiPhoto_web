@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use redis::{AsyncCommands, Client};
 use crate::error::{AppError, Result};
 
@@ -22,7 +23,7 @@ impl RedisService {
         let mut conn = self.get_connection().await?;
         
         let key = format!("verification_code:{}", email);
-        conn.set_ex(&key, code, ttl as usize).await
+        let _: () = conn.set_ex(&key, code, ttl as u64).await
             .map_err(|e| AppError::Internal(anyhow::anyhow!("Redis SETEX failed: {}", e)))?;
         
         Ok(())
@@ -44,7 +45,7 @@ impl RedisService {
         let mut conn = self.get_connection().await?;
         
         let key = format!("verification_code:{}", email);
-        conn.del(&key).await
+        let _: () = conn.del(&key).await
             .map_err(|e| AppError::Internal(anyhow::anyhow!("Redis DEL failed: {}", e)))?;
         
         Ok(())
