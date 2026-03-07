@@ -10,6 +10,7 @@ pub struct Config {
     pub smtp_username: String,
     pub smtp_password: String,
     pub smtp_from: String,
+    pub smtp_from_name: String,
     pub frontend_url: String,
     pub max_image_width: u32,
     pub max_image_height: u32,
@@ -27,7 +28,7 @@ pub struct Config {
 impl Config {
     pub fn from_env() -> Result<Self, dotenvy::Error> {
         dotenvy::dotenv().ok();
-        
+
         Ok(Config {
             database_url: std::env::var("DATABASE_URL")
                 .unwrap_or_else(|_| "sqlite:hiphoto.db?mode=rwc".to_string()),
@@ -45,6 +46,7 @@ impl Config {
             smtp_username: std::env::var("SMTP_USERNAME").unwrap_or_default(),
             smtp_password: std::env::var("SMTP_PASSWORD").unwrap_or_default(),
             smtp_from: std::env::var("SMTP_FROM").unwrap_or_default(),
+            smtp_from_name: std::env::var("SMTP_FROM_NAME").unwrap_or_default(),
             frontend_url: std::env::var("FRONTEND_URL")
                 .unwrap_or_else(|_| "http://localhost:5173".to_string()),
             max_image_width: std::env::var("MAX_IMAGE_WIDTH")

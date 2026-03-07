@@ -55,22 +55,47 @@ impl EmailService {
     }
 
     /// 创建邮件服务实例并指定传输方式（用于测试）
-    pub fn with_transport(config: Config, transport: EmailTransport) -> Self {
-        Self { config, transport }
-    }
+    // pub fn with_transport(config: Config, transport: EmailTransport) -> Self {
+    //     Self { config, transport }
+    // }
 
     /// 生成验证邮件内容（纯程序逻辑，不涉及网络）
     pub fn build_verification_email(&self, email: &str, code: &str) -> Result<Message> {
+        let from_address = if !self.config.smtp_from_name.is_empty() {
+            format!("{} <{}>", self.config.smtp_from_name, self.config.smtp_from)
+        } else {
+            self.config.smtp_from.clone()
+        };
         let message = Message::builder()
             .from(
-                self.config
-                    .smtp_from
+                from_address
                     .parse()
                     .map_err(|e| AppError::Email(format!("Invalid from address: {}", e)))?,
             )
             .to(email
                 .parse()
                 .map_err(|e| AppError::Email(format!("Invalid to address: {}", e)))?)
+            // pub fn build_verification_email(&self, email: &str, code: &str) -> Result<Message> {
+            //     let message = Message::builder()
+            //         .from(
+            //             format!("hiPhoto <{}>", self.config.smtp_from)
+            //                 .parse()
+            //                 .map_err(|e| AppError::Email(format!("Invalid from address: {}", e)))?,
+            //         )
+            //         .to(email
+            //             .parse()
+            //             .map_err(|e| AppError::Email(format!("Invalid to address: {}", e)))?)
+            // pub fn build_verification_email(&self, email: &str, code: &str) -> Result<Message> {
+            //     let message = Message::builder()
+            //         .from(
+            //             self.config
+            //                 .smtp_from
+            //                 .parse()
+            //                 .map_err(|e| AppError::Email(format!("Invalid from address: {}", e)))?,
+            //         )
+            //         .to(email
+            //             .parse()
+            //             .map_err(|e| AppError::Email(format!("Invalid to address: {}", e)))?)
             .subject("HiPhoto - 邮箱验证码")
             .multipart(
                 MultiPart::mixed().singlepart(
