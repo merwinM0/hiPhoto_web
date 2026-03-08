@@ -2,6 +2,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
 import { useState, useRef, useEffect } from 'react'
 import UserAvatar from './UserAvatar'
+import { userApi } from '../api/auth'
 
 export default function Navbar() {
   const { user, logout } = useAuthStore()
@@ -119,6 +120,7 @@ function ProfileModal({ user, onClose }: ProfileModalProps) {
   const [username, setUsername] = useState(user?.username || '')
   const [bio, setBio] = useState(user?.bio || '')
   const [loading, setLoading] = useState(false)
+  const [fetching, setFetching] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const { setUser } = useAuthStore()
@@ -130,16 +132,14 @@ function ProfileModal({ user, onClose }: ProfileModalProps) {
     setLoading(true)
 
     try {
-      // 这里应该调用API更新用户信息
-      // 暂时模拟成功
-      const updatedUser = {
-        ...user,
-        username: username || null,
-        bio: bio || null
+      const response = await userApi.updateProfile({ username, bio })
+      if (response.data) {
+        setUser(response.data)
+        setSuccess(true)
+        setTimeout(() => setSuccess(false), 2000)
+      } else if (response.error) {
+        setError(response.error)
       }
-      setUser(updatedUser)
-      setSuccess(true)
-      setTimeout(() => setSuccess(false), 2000)
     } catch (err: any) {
       setError(err.response?.data?.error || '保存失败')
     } finally {
@@ -148,12 +148,30 @@ function ProfileModal({ user, onClose }: ProfileModalProps) {
   }
 
   useEffect(() => {
+    const fetchUserProfile = async () => {
+      setFetching(true)
+      try {
+        const response = await userApi.getProfile()
+        if (response.data) {
+          setUser(response.data)
+          setUsername(response.data.username || '')
+          setBio(response.data.bio || '')
+        }
+      } catch (err) {
+        console.error('Failed to fetch user profile:', err)
+      } finally {
+        setFetching(false)
+      }
+    }
+
+    fetchUserProfile()
+
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
     }
     document.addEventListener('keydown', handleEscape)
     return () => document.removeEventListener('keydown', handleEscape)
-  }, [onClose])
+  }, [onClose, setUser])
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -171,18 +189,23 @@ function ProfileModal({ user, onClose }: ProfileModalProps) {
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm">
-                {error}
-              </div>
-            )}
+           {fetching ? (
+             <div className="flex justify-center items-center py-12">
+               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
+             </div>
+           ) : (
+             <form onSubmit={handleSubmit} className="space-y-4">
+               {error && (
+                 <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm">
+                   {error}
+                 </div>
+               )}
 
-            {success && (
-              <div className="p-3 bg-green-50 text-green-600 rounded-lg text-sm">
-                保存成功
-              </div>
-            )}
+               {success && (
+                 <div className="p-3 bg-green-50 text-green-600 rounded-lg text-sm">
+                   保存成功
+                 </div>
+               )}
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -239,8 +262,9 @@ function ProfileModal({ user, onClose }: ProfileModalProps) {
               >
                 {loading ? '保存中...' : '保存'}
               </button>
-            </div>
-          </form>
+             </div>
+           </form>
+           )}
         </div>
       </div>
     </div>

@@ -20,6 +20,7 @@ export default function Profile() {
   const loadProfile = async () => {
     try {
       const response = await userApi.getProfile()
+      console.log('hi',response)
       if (response.data) {
         setLocalUser(response.data)
         setUsername(response.data.username || '')
