@@ -5,7 +5,6 @@ import Home from './pages/Home'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import VerifyEmail from './pages/VerifyEmail'
-import Profile from './pages/Profile'
 import RoomList from './pages/RoomList'
 import RoomDetail from './pages/RoomDetail'
 import PhotoDetail from './pages/PhotoDetail'
@@ -23,7 +22,6 @@ function App() {
         
         {/* 需要认证的路由 */}
         <Route element={<ProtectedRoute />}>
-          <Route path="/profile" element={<Profile />} />
           <Route path="/rooms" element={<RoomList />} />
           <Route path="/rooms/:roomId" element={<RoomDetail />} />
           <Route path="/photos/:photoId" element={<PhotoDetail />} />
