@@ -6,11 +6,11 @@ export const authApi = {
     return apiCall(api.post('/auth/send-code', { email }))
   },
 
-  register: async (email: string, password: string, code: string): Promise<ApiResponse<{ message: string; email: string }>> => {
+  register: async (email: string, password: string, code: string): Promise<ApiResponse<{ message: string; email: string; user_id: string }>> => {
     return apiCall(api.post('/auth/register', { email, password, code }))
   },
 
-  verifyEmail: async (email: string, code: string): Promise<ApiResponse<{ message: string }>> => {
+  verifyEmail: async (email: string, code: string): Promise<ApiResponse<{ message: string; email: string; user_id: string }>> => {
     return apiCall(api.post('/auth/verify', { email, code }))
   },
 
@@ -18,7 +18,7 @@ export const authApi = {
     return apiCall(api.post('/auth/login', { email, password }))
   },
 
-  resendVerification: async (email: string): Promise<ApiResponse<{ message: string }>> => {
+  resendVerification: async (email: string): Promise<ApiResponse<{ message: string; email: string }>> => {
     return apiCall(api.post('/auth/resend', { email }))
   },
 }
