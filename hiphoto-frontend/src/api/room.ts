@@ -6,7 +6,11 @@ export const roomApi = {
     return apiCall(api.get('/rooms'))
   },
 
-  createRoom: async (data: { name: string; description?: string }): Promise<ApiResponse<Room>> => {
+  getPublicRooms: async (): Promise<ApiResponse<Room[]>> => {
+    return apiCall(api.get('/rooms/public'))
+  },
+
+  createRoom: async (data: { name: string; description?: string; is_public?: boolean }): Promise<ApiResponse<Room>> => {
     return apiCall(api.post('/rooms', data))
   },
 

@@ -27,6 +27,7 @@ pub async fn init_db(database_url: &str) -> Result<SqlitePool> {
             description TEXT,
             upload_limit INTEGER DEFAULT 10,
             scoring_criteria TEXT,
+            is_public INTEGER DEFAULT 0,
             created_at TEXT NOT NULL,
             FOREIGN KEY (owner_id) REFERENCES users(id)
         )

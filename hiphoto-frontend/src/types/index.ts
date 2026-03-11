@@ -16,6 +16,7 @@ export interface Room {
   description: string | null
   upload_limit: number
   scoring_criteria: ScoringCriteria | null
+  is_public: boolean
   created_at: string
   member_count: number
   photo_count: number

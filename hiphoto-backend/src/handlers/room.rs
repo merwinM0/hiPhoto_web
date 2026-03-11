@@ -19,12 +19,13 @@ pub async fn create_room(
     Extension(auth_user): Extension<AuthUser>,
     Json(payload): Json<CreateRoomRequest>,
 ) -> Result<Json<RoomResponse>> {
-    let room = Room::new(auth_user.user_id.clone(), payload.name, payload.description);
+    let is_public = payload.is_public.unwrap_or(false);
+    let room = Room::new(auth_user.user_id.clone(), payload.name, payload.description, is_public);
 
     // 创建房间
     sqlx::query(
-        "INSERT INTO rooms (id, owner_id, invite_code, name, description, upload_limit, scoring_criteria, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+        "INSERT INTO rooms (id, owner_id, invite_code, name, description, upload_limit, scoring_criteria, is_public, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
     )
     .bind(&room.id)
     .bind(&room.owner_id)
@@ -33,6 +34,7 @@ pub async fn create_room(
     .bind(&room.description)
     .bind(room.upload_limit)
     .bind(&room.scoring_criteria)
+    .bind(room.is_public)
     .bind(&room.created_at)
     .execute(&pool)
     .await?;
@@ -54,6 +56,7 @@ pub async fn create_room(
         description: room.description,
         upload_limit: room.upload_limit,
         scoring_criteria: None,
+        is_public: room.is_public,
         created_at: room.created_at,
         member_count: 1,
         photo_count: 0,
@@ -101,6 +104,7 @@ pub async fn get_rooms(
             description: room.description,
             upload_limit: room.upload_limit,
             scoring_criteria,
+            is_public: room.is_public,
             created_at: room.created_at,
             member_count,
             photo_count,
@@ -161,6 +165,7 @@ pub async fn get_room(
         description: room.description,
         upload_limit: room.upload_limit,
         scoring_criteria,
+        is_public: room.is_public,
         created_at: room.created_at,
         member_count,
         photo_count,
@@ -358,4 +363,67 @@ pub async fn leave_room(
     Ok(Json(json!({
         "message": "Left room successfully"
     })))
+}
+
+pub async fn get_public_rooms(
+    State((pool, _config)): State<(SqlitePool, Config)>,
+    Extension(auth_user): Extension<AuthUser>,
+) -> Result<Json<Vec<RoomResponse>>> {
+    // 获取所有公开房间
+    let rooms = sqlx::query_as::<_, Room>(
+        "SELECT r.* FROM rooms r WHERE r.is_public = 1"
+    )
+    .fetch_all(&pool)
+    .await?;
+
+    let mut responses = Vec::new();
+    for room in rooms {
+        // 检查用户是否已经加入该房间
+        let is_member: bool = sqlx::query_scalar(
+            "SELECT COUNT(*) > 0 FROM room_members WHERE room_id = ? AND user_id = ?"
+        )
+        .bind(&room.id)
+        .bind(&auth_user.user_id)
+        .fetch_one(&pool)
+        .await?;
+
+        // 如果已经加入，跳过
+        if is_member {
+            continue;
+        }
+
+        let member_count: i32 = sqlx::query_scalar(
+            "SELECT COUNT(*) FROM room_members WHERE room_id = ?"
+        )
+        .bind(&room.id)
+        .fetch_one(&pool)
+        .await?;
+
+        let photo_count: i32 = sqlx::query_scalar(
+            "SELECT COUNT(*) FROM photos WHERE room_id = ?"
+        )
+        .bind(&room.id)
+        .fetch_one(&pool)
+        .await?;
+
+        let scoring_criteria: Option<ScoringCriteria> = room.scoring_criteria
+            .as_ref()
+            .and_then(|s| serde_json::from_str(s).ok());
+
+        responses.push(RoomResponse {
+            id: room.id,
+            owner_id: room.owner_id,
+            invite_code: room.invite_code,
+            name: room.name,
+            description: room.description,
+            upload_limit: room.upload_limit,
+            scoring_criteria,
+            is_public: room.is_public,
+            created_at: room.created_at,
+            member_count,
+            photo_count,
+        });
+    }
+
+    Ok(Json(responses))
 }

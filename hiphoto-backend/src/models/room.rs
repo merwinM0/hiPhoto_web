@@ -14,11 +14,12 @@ pub struct Room {
     pub description: Option<String>,
     pub upload_limit: i32,
     pub scoring_criteria: Option<String>,
+    pub is_public: bool,
     pub created_at: String,
 }
 
 impl Room {
-    pub fn new(owner_id: String, name: String, description: Option<String>) -> Self {
+    pub fn new(owner_id: String, name: String, description: Option<String>, is_public: bool) -> Self {
         Self {
             id: Uuid::new_v4().to_string(),
             owner_id,
@@ -27,6 +28,7 @@ impl Room {
             description,
             upload_limit: 10,
             scoring_criteria: None,
+            is_public,
             created_at: Utc::now().to_rfc3339(),
         }
     }
@@ -56,6 +58,7 @@ pub struct RoomMember {
 pub struct CreateRoomRequest {
     pub name: String,
     pub description: Option<String>,
+    pub is_public: Option<bool>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -92,6 +95,7 @@ pub struct RoomResponse {
     pub description: Option<String>,
     pub upload_limit: i32,
     pub scoring_criteria: Option<ScoringCriteria>,
+    pub is_public: bool,
     pub created_at: String,
     pub member_count: i32,
     pub photo_count: i32,

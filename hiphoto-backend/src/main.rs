@@ -70,6 +70,7 @@ fn create_app(pool: SqlitePool, config: Config) -> Router {
         .route("/api/rooms/:room_id", get(room::get_room))
         .route("/api/rooms/:room_id", put(room::update_room))
         .route("/api/rooms/join", post(room::join_room))
+        .route("/api/rooms/public", get(room::get_public_rooms))
         .route("/api/rooms/:room_id/members", get(room::get_room_members))
         .route(
             "/api/rooms/:room_id/members/:user_id",

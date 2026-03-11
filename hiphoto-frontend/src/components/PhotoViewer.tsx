@@ -19,7 +19,7 @@ export default function PhotoViewer({
   readOnly = false,
 }: PhotoViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null)
-  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 })
+  const [, setContainerSize] = useState({ width: 0, height: 0 })
   const [imageRect, setImageRect] = useState({ x: 0, y: 0, width: 0, height: 0 })
   const [hoveredTag, setHoveredTag] = useState<string | null>(null)
 

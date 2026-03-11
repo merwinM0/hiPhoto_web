@@ -3,10 +3,10 @@ import type { Room } from '../types'
 
 interface RoomCardProps {
   room: Room
-  isOwner: boolean
+  isOwner?: boolean
 }
 
-export default function RoomCard({ room, isOwner }: RoomCardProps) {
+export default function RoomCard({ room, isOwner = false }: RoomCardProps) {
   return (
     <Link
       to={`/rooms/${room.id}`}
@@ -19,11 +19,18 @@ export default function RoomCard({ room, isOwner }: RoomCardProps) {
             <p className="mt-1 text-sm text-gray-600 line-clamp-2">{room.description}</p>
           )}
         </div>
-        {isOwner && (
-          <span className="px-2 py-1 text-xs bg-primary-100 text-primary-700 rounded">
-            房主
-          </span>
-        )}
+        <div className="flex gap-2">
+          {room.is_public && (
+            <span className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded">
+              公开
+            </span>
+          )}
+          {isOwner && (
+            <span className="px-2 py-1 text-xs bg-primary-100 text-primary-700 rounded">
+              房主
+            </span>
+          )}
+        </div>
       </div>
       
       <div className="mt-3 flex items-center gap-4 text-sm text-gray-500">

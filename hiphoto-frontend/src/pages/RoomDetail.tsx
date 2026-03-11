@@ -59,14 +59,7 @@ export default function RoomDetail() {
     await loadRoomData()
   }
 
-  const handleLeaveRoom = async () => {
-    if (!roomId || isOwner) return
-    
-    if (confirm('确定要离开这个房间吗？')) {
-      await roomApi.leaveRoom(roomId)
-      navigate('/rooms')
-    }
-  }
+
 
   const handleKickMember = async (userId: string) => {
     if (!roomId) return
