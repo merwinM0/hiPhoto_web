@@ -26,7 +26,7 @@ pub async fn create_tag(
 
     // 验证成员身份
     let is_member: bool = sqlx::query_scalar(
-        "SELECT COUNT(*) > 0 FROM room_members WHERE room_id = ? AND user_id = ?"
+        "SELECT COUNT(*) > 0 FROM room_members WHERE room_id = ? AND user_id = ? AND status = 'approved'"
     )
     .bind(&photo.room_id)
     .bind(&auth_user.user_id)
@@ -34,7 +34,7 @@ pub async fn create_tag(
     .await?;
 
     if !is_member {
-        return Err(AppError::Auth("Not a member of this room".to_string()));
+        return Err(AppError::Auth("Not an approved member of this room".to_string()));
     }
 
     // 检查该用户是否已在此图片添加过标签
@@ -157,7 +157,7 @@ pub async fn get_photo_tags(
 
     // 验证成员身份
     let is_member: bool = sqlx::query_scalar(
-        "SELECT COUNT(*) > 0 FROM room_members WHERE room_id = ? AND user_id = ?"
+        "SELECT COUNT(*) > 0 FROM room_members WHERE room_id = ? AND user_id = ? AND status = 'approved'"
     )
     .bind(&photo.room_id)
     .bind(&auth_user.user_id)
@@ -165,7 +165,7 @@ pub async fn get_photo_tags(
     .await?;
 
     if !is_member {
-        return Err(AppError::Auth("Not a member of this room".to_string()));
+        return Err(AppError::Auth("Not an approved member of this room".to_string()));
     }
 
     let tags = sqlx::query_as::<_, Tag>(

@@ -29,7 +29,7 @@ pub async fn submit_score(
 
     // 验证成员身份
     let is_member: bool = sqlx::query_scalar(
-        "SELECT COUNT(*) > 0 FROM room_members WHERE room_id = ? AND user_id = ?"
+        "SELECT COUNT(*) > 0 FROM room_members WHERE room_id = ? AND user_id = ? AND status = 'approved'"
     )
     .bind(&photo.room_id)
     .bind(&auth_user.user_id)
@@ -37,7 +37,7 @@ pub async fn submit_score(
     .await?;
 
     if !is_member {
-        return Err(AppError::Auth("Not a member of this room".to_string()));
+        return Err(AppError::Auth("Not an approved member of this room".to_string()));
     }
 
     // 获取当前评分轮次
@@ -148,7 +148,7 @@ pub async fn get_scoreboard(
 ) -> Result<Json<ScoreRoundResponse>> {
     // 验证成员身份
     let is_member: bool = sqlx::query_scalar(
-        "SELECT COUNT(*) > 0 FROM room_members WHERE room_id = ? AND user_id = ?"
+        "SELECT COUNT(*) > 0 FROM room_members WHERE room_id = ? AND user_id = ? AND status = 'approved'"
     )
     .bind(&room_id)
     .bind(&auth_user.user_id)
@@ -156,7 +156,7 @@ pub async fn get_scoreboard(
     .await?;
 
     if !is_member {
-        return Err(AppError::Auth("Not a member of this room".to_string()));
+        return Err(AppError::Auth("Not an approved member of this room".to_string()));
     }
 
     // 获取当前活跃轮次

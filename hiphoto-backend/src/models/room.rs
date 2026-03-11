@@ -51,7 +51,8 @@ pub struct RoomMember {
     pub room_id: String,
     pub user_id: String,
     pub role: String,
-    pub joined_at: String,
+    pub status: String,
+    pub joined_at: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]

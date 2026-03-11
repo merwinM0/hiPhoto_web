@@ -375,7 +375,7 @@ CREATE TABLE IF NOT EXISTS score_rounds (
 ```
 - **Response**: Same as Get Room Details
 
-### 加入房间
+### 加入房间（通过邀请码）
 - **方法**: POST
 - **端点**: `/api/rooms/join`
 - **请求头**: `Authorization: Bearer <token>`, `Content-Type: application/json`
@@ -386,6 +386,24 @@ CREATE TABLE IF NOT EXISTS score_rounds (
 }
 ```
 - **Response**: Same as Get Room Details
+
+### 申请加入公开房间
+- **方法**: POST
+- **端点**: `/api/rooms/join-public`
+- **请求头**: `Authorization: Bearer <token>`, `Content-Type: application/json`
+- **Request Body**:
+```json
+{
+  "room_id": "string"
+}
+```
+- **Response**:
+```json
+{
+  "message": "Application submitted, waiting for approval",
+  "room_id": "string"
+}
+```
 
 ### 获取房间成员
 - **方法**: GET
@@ -398,6 +416,7 @@ CREATE TABLE IF NOT EXISTS score_rounds (
     "user_id": "string",
     "username": "string | null",
     "role": "string",
+    "status": "string", // pending, approved, rejected
     "photo_count": number
   }
 ]
@@ -411,6 +430,28 @@ CREATE TABLE IF NOT EXISTS score_rounds (
 ```json
 {
   "message": "Member kicked successfully"
+}
+```
+
+### 批准成员加入
+- **方法**: POST
+- **端点**: `/api/rooms/:room_id/members/:user_id/approve`
+- **请求头**: `Authorization: Bearer <token>`
+- **Response**:
+```json
+{
+  "message": "Member approved successfully"
+}
+```
+
+### 拒绝成员加入
+- **方法**: POST
+- **端点**: `/api/rooms/:room_id/members/:user_id/reject`
+- **请求头**: `Authorization: Bearer <token>`
+- **Response**:
+```json
+{
+  "message": "Member rejected"
 }
 ```
 

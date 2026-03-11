@@ -19,7 +19,7 @@ pub async fn upload_photo(
 ) -> Result<Json<PhotoResponse>> {
     // 验证成员身份
     let is_member: bool = sqlx::query_scalar(
-        "SELECT COUNT(*) > 0 FROM room_members WHERE room_id = ? AND user_id = ?"
+        "SELECT COUNT(*) > 0 FROM room_members WHERE room_id = ? AND user_id = ? AND status = 'approved'"
     )
     .bind(&room_id)
     .bind(&auth_user.user_id)
@@ -27,7 +27,7 @@ pub async fn upload_photo(
     .await?;
 
     if !is_member {
-        return Err(AppError::Auth("Not a member of this room".to_string()));
+        return Err(AppError::Auth("Not an approved member of this room".to_string()));
     }
 
     // 检查上传限制
@@ -112,7 +112,7 @@ pub async fn get_room_photos(
 ) -> Result<Json<Vec<PhotoResponse>>> {
     // 验证成员身份
     let is_member: bool = sqlx::query_scalar(
-        "SELECT COUNT(*) > 0 FROM room_members WHERE room_id = ? AND user_id = ?"
+        "SELECT COUNT(*) > 0 FROM room_members WHERE room_id = ? AND user_id = ? AND status = 'approved'"
     )
     .bind(&room_id)
     .bind(&auth_user.user_id)
@@ -120,7 +120,7 @@ pub async fn get_room_photos(
     .await?;
 
     if !is_member {
-        return Err(AppError::Auth("Not a member of this room".to_string()));
+        return Err(AppError::Auth("Not an approved member of this room".to_string()));
     }
 
     let photos = sqlx::query_as::<_, Photo>(
@@ -181,17 +181,17 @@ pub async fn get_photo(
     .fetch_one(&pool)
     .await?;
 
-    // 验证成员身份
-    let is_member: bool = sqlx::query_scalar(
-        "SELECT COUNT(*) > 0 FROM room_members WHERE room_id = ? AND user_id = ?"
+    // 验证成员身份（必须是已批准的成员）
+    let is_approved_member: bool = sqlx::query_scalar(
+        "SELECT COUNT(*) > 0 FROM room_members WHERE room_id = ? AND user_id = ? AND status = 'approved'"
     )
     .bind(&photo.room_id)
     .bind(&auth_user.user_id)
     .fetch_one(&pool)
     .await?;
 
-    if !is_member {
-        return Err(AppError::Auth("Not a member of this room".to_string()));
+    if !is_approved_member {
+        return Err(AppError::Auth("Not an approved member of this room".to_string()));
     }
 
     let uploader_name: Option<String> = sqlx::query_scalar(
