@@ -24,16 +24,23 @@ export default function RoomDetail() {
   const isOwner = room?.owner_id === user?.id
 
   useEffect(() => {
+    console.log('RoomDetail mounted with roomId:', roomId)
     if (roomId) {
       loadRoomData()
+    } else {
+      console.error('No roomId provided in URL')
+      setError('房间ID不存在')
+      setLoading(false)
     }
   }, [roomId])
 
   const loadRoomData = async () => {
     if (!roomId) return
     setLoading(true)
+    setError(null)
 
     try {
+      console.log('Loading room data for:', roomId)
       const [roomRes, photosRes, membersRes, scoreRes] = await Promise.all([
         roomApi.getRoom(roomId),
         photoApi.getRoomPhotos(roomId),
@@ -41,13 +48,22 @@ export default function RoomDetail() {
         scoreApi.getScoreboard(roomId),
       ])
 
+      console.log('Room response:', roomRes)
+      console.log('Photos response:', photosRes)
+      console.log('Members response:', membersRes)
+      console.log('Score response:', scoreRes)
+
       if (roomRes.data) setRoom(roomRes.data)
       if (photosRes.data) setPhotos(photosRes.data)
       if (membersRes.data) setMembers(membersRes.data)
       if (scoreRes.data) setScoreRound(scoreRes.data)
+      
+      if (roomRes.error) {
+        setError(`房间加载失败: ${roomRes.error}`)
+      }
     } catch (err) {
       console.error('Failed to load room:', err)
-      setError('加载失败')
+      setError(`加载失败: ${err instanceof Error ? err.message : '未知错误'}`)
     } finally {
       setLoading(false)
     }
@@ -106,18 +122,29 @@ export default function RoomDetail() {
     }
   }
 
+  console.log('RoomDetail render state:', { loading, error, room, photos, members, scoreRound })
+
   if (loading) {
+    console.log('RoomDetail: Showing loading state')
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
+        <span className="ml-3 text-gray-600">加载房间数据中...</span>
       </div>
     )
   }
 
   if (error || !room) {
+    console.log('RoomDetail: Showing error/not found state', { error, room })
     return (
       <div className="text-center py-16">
         <p className="text-gray-500">{error || '房间不存在'}</p>
+        <button 
+          onClick={() => window.history.back()}
+          className="mt-4 px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200"
+        >
+          返回
+        </button>
       </div>
     )
   }

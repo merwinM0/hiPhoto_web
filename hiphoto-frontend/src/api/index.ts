@@ -16,17 +16,24 @@ const api = axios.create({
 // 请求拦截器：添加 token
 api.interceptors.request.use((config) => {
   const token = useAuthStore.getState().token
+  console.log('API request interceptor - token:', token ? 'present' : 'missing', 'URL:', config.url)
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
+    console.log('Added Authorization header')
   }
   return config
 })
 
 // 响应拦截器：处理错误
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log('API response success:', response.config.url, response.status)
+    return response
+  },
   (error) => {
+    console.log('API response error:', error.config?.url, error.response?.status, error.message)
     if (error.response?.status === 401) {
+      console.log('Unauthorized, logging out')
       useAuthStore.getState().logout()
       window.location.href = '/login'
     }

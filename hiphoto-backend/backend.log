@@ -141,6 +141,6 @@ warning: `hiphoto-backend` (bin "hiphoto-backend") generated 18 warnings (8 dupl
 warning: the following packages contain code that will be rejected by a future version of Rust: redis v0.24.0
 note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
      Running `target/debug/hiphoto-backend`
-[2m2026-03-11T01:28:02.651628Z[0m [32m INFO[0m [2mhiphoto_backend[0m[2m:[0m Loaded configuration
-[2m2026-03-11T01:28:02.654084Z[0m [32m INFO[0m [2mhiphoto_backend[0m[2m:[0m Database initialized
-[2m2026-03-11T01:28:02.655089Z[0m [32m INFO[0m [2mhiphoto_backend[0m[2m:[0m Server running on http://0.0.0.0:8000
+[2m2026-03-11T01:36:21.351552Z[0m [32m INFO[0m [2mhiphoto_backend[0m[2m:[0m Loaded configuration
+[2m2026-03-11T01:36:21.353879Z[0m [32m INFO[0m [2mhiphoto_backend[0m[2m:[0m Database initialized
+[2m2026-03-11T01:36:21.355052Z[0m [32m INFO[0m [2mhiphoto_backend[0m[2m:[0m Server running on http://0.0.0.0:8000

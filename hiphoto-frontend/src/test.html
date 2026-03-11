@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Test</title>
+</head>
+<body>
+    <h1>API Test Page</h1>
+    <button onclick="testApi()">Test API</button>
+    <div id="result"></div>
+    
+    <script>
+        async function testApi() {
+            const token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjMDAzODlkOS1kMTY2LTQxNmQtODRkNy03ZWU2ZDUxNDgzYjkiLCJlbWFpbCI6InRlc3QyQGV4YW1wbGUuY29tIiwiZXhwIjoxNzczMjc5NDA0fQ.ADg8lroKu8Sq1TwRyd5xwUAbt1Zr0HJMLFYdTcdccJI";
+            
+            try {
+                const response = await fetch('/api/rooms', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                const data = await response.json();
+                document.getElementById('result').innerHTML = 
+                    `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+            } catch (error) {
+                document.getElementById('result').innerHTML = 
+                    `Error: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>
