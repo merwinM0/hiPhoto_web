@@ -10,7 +10,7 @@ use crate::config::Config;
 use crate::error::{AppError, Result};
 use crate::services::auth::AuthUser;
 use crate::models::{
-    CreateRoomRequest, UpdateRoomRequest, JoinRoomRequest,
+    CreateRoomRequest, UpdateRoomRequest, JoinRoomRequest, JoinPublicRoomRequest,
     Room, RoomMember, RoomResponse, RoomMemberResponse, ScoringCriteria,
 };
 
@@ -211,6 +211,74 @@ pub async fn update_room(
     get_room(State((pool, _config)), Extension(auth_user), Path(room_id)).await
 }
 
+pub async fn join_public_room(
+    State((pool, _config)): State<(SqlitePool, Config)>,
+    Extension(auth_user): Extension<AuthUser>,
+    Json(payload): Json<JoinPublicRoomRequest>,
+) -> Result<Json<serde_json::Value>> {
+    let room_id = payload.room_id;
+
+    // 检查房间是否存在且是公开的
+    let room: Option<(bool,)> = sqlx::query_as(
+        "SELECT is_public FROM rooms WHERE id = ?"
+    )
+    .bind(&room_id)
+    .fetch_optional(&pool)
+    .await?;
+
+    let (is_public,) = room.ok_or_else(|| AppError::NotFound("Room not found".to_string()))?;
+
+    if !is_public {
+        return Err(AppError::Auth("Room is not public".to_string()));
+    }
+
+    // 检查是否已是成员
+    let member_status: Option<String> = sqlx::query_scalar(
+        "SELECT status FROM room_members WHERE room_id = ? AND user_id = ?"
+    )
+    .bind(&room_id)
+    .bind(&auth_user.user_id)
+    .fetch_optional(&pool)
+    .await?;
+
+    if let Some(status) = member_status {
+        match status.as_str() {
+            "approved" => return Err(AppError::Validation("Already a member of this room".to_string())),
+            "pending" => return Err(AppError::Validation("Waiting for approval".to_string())),
+            "rejected" => {
+                // 如果之前被拒绝，可以重新申请
+                sqlx::query(
+                    "UPDATE room_members SET status = 'pending' WHERE room_id = ? AND user_id = ?"
+                )
+                .bind(&room_id)
+                .bind(&auth_user.user_id)
+                .execute(&pool)
+                .await?;
+                
+                return Ok(Json(serde_json::json!({
+                    "message": "Application submitted, waiting for approval",
+                    "room_id": room_id
+                })));
+            }
+            _ => {}
+        }
+    }
+
+    // 申请加入公开房间：需要审批
+    sqlx::query(
+        "INSERT INTO room_members (room_id, user_id, role, status) VALUES (?, ?, 'member', 'pending')"
+    )
+    .bind(&room_id)
+    .bind(&auth_user.user_id)
+    .execute(&pool)
+    .await?;
+
+    Ok(Json(serde_json::json!({
+        "message": "Application submitted, waiting for approval",
+        "room_id": room_id
+    })))
+}
+
 pub async fn join_room(
     State((pool, _config)): State<(SqlitePool, Config)>,
     Extension(auth_user): Extension<AuthUser>,
@@ -225,24 +293,46 @@ pub async fn join_room(
     .ok_or_else(|| AppError::NotFound("Invalid invite code".to_string()))?;
 
     // 检查是否已是成员
-    let is_member: bool = sqlx::query_scalar(
-        "SELECT COUNT(*) > 0 FROM room_members WHERE room_id = ? AND user_id = ?"
+    let member_status: Option<String> = sqlx::query_scalar(
+        "SELECT status FROM room_members WHERE room_id = ? AND user_id = ?"
     )
     .bind(&room.id)
     .bind(&auth_user.user_id)
-    .fetch_one(&pool)
+    .fetch_optional(&pool)
     .await?;
 
-    if is_member {
-        return Err(AppError::Validation("Already a member of this room".to_string()));
+    if let Some(status) = member_status {
+        match status.as_str() {
+            "approved" => return Err(AppError::Validation("Already a member of this room".to_string())),
+            "pending" => return Err(AppError::Validation("Waiting for approval".to_string())),
+            "rejected" => {
+                // 如果之前被拒绝，可以重新申请
+                sqlx::query(
+                    "UPDATE room_members SET status = 'pending' WHERE room_id = ? AND user_id = ?"
+                )
+                .bind(&room.id)
+                .bind(&auth_user.user_id)
+                .execute(&pool)
+                .await?;
+                
+                return get_room(State((pool, _config)), Extension(auth_user), Path(room.id)).await;
+            }
+            _ => {}
+        }
     }
+
+    // 通过邀请码加入：直接批准
+    let status = "approved";
+    let joined_at = Some(chrono::Utc::now().to_rfc3339());
 
     // 加入房间
     sqlx::query(
-        "INSERT INTO room_members (room_id, user_id, role, joined_at) VALUES (?, ?, 'member', datetime('now'))"
+        "INSERT INTO room_members (room_id, user_id, role, status, joined_at) VALUES (?, ?, 'member', ?, ?)"
     )
     .bind(&room.id)
     .bind(&auth_user.user_id)
+    .bind(status)
+    .bind(&joined_at)
     .execute(&pool)
     .await?;
 
@@ -303,26 +393,94 @@ pub async fn get_room_members(
     Ok(Json(responses))
 }
 
+pub async fn approve_member(
+    State((pool, _config)): State<(SqlitePool, Config)>,
+    Extension(auth_user): Extension<AuthUser>,
+    Path((room_id, user_id)): Path<(String, String)>,
+) -> Result<Json<serde_json::Value>> {
+    // 验证房主身份
+    let is_owner: bool = sqlx::query_scalar(
+        "SELECT COUNT(*) > 0 FROM rooms WHERE id = ? AND owner_id = ?"
+    )
+    .bind(&room_id)
+    .bind(&auth_user.user_id)
+    .fetch_one(&pool)
+    .await?;
+
+    if !is_owner {
+        return Err(AppError::Auth("Only room owner can approve members".to_string()));
+    }
+
+    // 批准成员
+    sqlx::query(
+        "UPDATE room_members SET status = 'approved', joined_at = datetime('now') WHERE room_id = ? AND user_id = ?"
+    )
+    .bind(&room_id)
+    .bind(&user_id)
+    .execute(&pool)
+    .await?;
+
+    Ok(Json(serde_json::json!({
+        "message": "Member approved successfully"
+    })))
+}
+
+pub async fn reject_member(
+    State((pool, _config)): State<(SqlitePool, Config)>,
+    Extension(auth_user): Extension<AuthUser>,
+    Path((room_id, user_id)): Path<(String, String)>,
+) -> Result<Json<serde_json::Value>> {
+    // 验证房主身份
+    let is_owner: bool = sqlx::query_scalar(
+        "SELECT COUNT(*) > 0 FROM rooms WHERE id = ? AND owner_id = ?"
+    )
+    .bind(&room_id)
+    .bind(&auth_user.user_id)
+    .fetch_one(&pool)
+    .await?;
+
+    if !is_owner {
+        return Err(AppError::Auth("Only room owner can reject members".to_string()));
+    }
+
+    // 拒绝成员
+    sqlx::query(
+        "UPDATE room_members SET status = 'rejected' WHERE room_id = ? AND user_id = ?"
+    )
+    .bind(&room_id)
+    .bind(&user_id)
+    .execute(&pool)
+    .await?;
+
+    Ok(Json(serde_json::json!({
+        "message": "Member rejected"
+    })))
+}
+
 pub async fn kick_member(
     State((pool, _config)): State<(SqlitePool, Config)>,
     Extension(auth_user): Extension<AuthUser>,
     Path((room_id, user_id)): Path<(String, String)>,
 ) -> Result<Json<serde_json::Value>> {
-    let room = sqlx::query_as::<_, Room>(
-        "SELECT * FROM rooms WHERE id = ?"
+    // 验证房主身份
+    let is_owner: bool = sqlx::query_scalar(
+        "SELECT COUNT(*) > 0 FROM rooms WHERE id = ? AND owner_id = ?"
     )
     .bind(&room_id)
+    .bind(&auth_user.user_id)
     .fetch_one(&pool)
     .await?;
 
-    if room.owner_id != auth_user.user_id {
+    if !is_owner {
         return Err(AppError::Auth("Only room owner can kick members".to_string()));
     }
 
+    // 不能踢出自己
     if user_id == auth_user.user_id {
         return Err(AppError::Validation("Cannot kick yourself".to_string()));
     }
 
+    // 删除成员
     sqlx::query(
         "DELETE FROM room_members WHERE room_id = ? AND user_id = ?"
     )
@@ -331,7 +489,7 @@ pub async fn kick_member(
     .execute(&pool)
     .await?;
 
-    Ok(Json(json!({
+    Ok(Json(serde_json::json!({
         "message": "Member kicked successfully"
     })))
 }

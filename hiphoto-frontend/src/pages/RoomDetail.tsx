@@ -181,10 +181,10 @@ export default function RoomDetail() {
                   onClick={() => navigate(`/photos/${photo.id}`)}
                   className="aspect-square bg-gray-100 rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
                 >
-                  <img
+                   <img
                     src={`data:image/jpeg;base64,${photo.thumbnail_base64}`}
                     alt="Photo"
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-contain bg-black"
                   />
                 </div>
               ))}

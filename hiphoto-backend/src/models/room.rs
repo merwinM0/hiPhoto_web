@@ -74,6 +74,11 @@ pub struct JoinRoomRequest {
     pub invite_code: String,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct JoinPublicRoomRequest {
+    pub room_id: String,
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ScoringCriteria {
     pub criteria: Vec<Criterion>,

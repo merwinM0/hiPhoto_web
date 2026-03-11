@@ -38,7 +38,8 @@ pub async fn init_db(database_url: &str) -> Result<SqlitePool> {
             room_id TEXT NOT NULL,
             user_id TEXT NOT NULL,
             role TEXT DEFAULT 'member',
-            joined_at TEXT NOT NULL,
+            status TEXT DEFAULT 'pending', -- pending, approved, rejected
+            joined_at TEXT,
             PRIMARY KEY (room_id, user_id),
             FOREIGN KEY (room_id) REFERENCES rooms(id),
             FOREIGN KEY (user_id) REFERENCES users(id)

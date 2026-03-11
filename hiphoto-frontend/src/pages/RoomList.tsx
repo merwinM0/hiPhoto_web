@@ -2,22 +2,24 @@ import { useState, useEffect } from 'react'
 import { roomApi } from '../api/room'
 import { useAuthStore } from '../stores/authStore'
 import RoomCard from '../components/RoomCard'
+import InviteCodeSearch from '../components/InviteCodeSearch'
 import type { Room } from '../types'
 
 export default function RoomList() {
   const { user } = useAuthStore()
   const [rooms, setRooms] = useState<Room[]>([])
+  const [publicRooms, setPublicRooms] = useState<Room[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
-  const [showJoinModal, setShowJoinModal] = useState(false)
-  const [inviteCode, setInviteCode] = useState('')
   const [newRoomName, setNewRoomName] = useState('')
   const [newRoomDescription, setNewRoomDescription] = useState('')
+  const [newRoomIsPublic, setNewRoomIsPublic] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [actionLoading, setActionLoading] = useState(false)
 
   useEffect(() => {
     loadRooms()
+    loadPublicRooms()
   }, [])
 
   const loadRooms = async () => {
@@ -33,6 +35,17 @@ export default function RoomList() {
     }
   }
 
+  const loadPublicRooms = async () => {
+    try {
+      const response = await roomApi.getPublicRooms()
+      if (response.data) {
+        setPublicRooms(response.data)
+      }
+    } catch (err) {
+      console.error('Failed to load public rooms:', err)
+    }
+  }
+
   const handleCreateRoom = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
@@ -42,12 +55,14 @@ export default function RoomList() {
       const response = await roomApi.createRoom({
         name: newRoomName,
         description: newRoomDescription || undefined,
+        is_public: newRoomIsPublic,
       })
       if (response.data) {
         setRooms([...rooms, response.data])
         setShowCreateModal(false)
         setNewRoomName('')
         setNewRoomDescription('')
+        setNewRoomIsPublic(false)
       }
     } catch (err: any) {
       setError(err.response?.data?.error || '创建失败')
@@ -56,22 +71,16 @@ export default function RoomList() {
     }
   }
 
-  const handleJoinRoom = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-    setActionLoading(true)
-
+  const handleJoinRoom = async (inviteCode: string) => {
     try {
       const response = await roomApi.joinRoom(inviteCode.toUpperCase())
       if (response.data) {
         setRooms([...rooms, response.data])
-        setShowJoinModal(false)
-        setInviteCode('')
+        loadRooms() // 重新加载房间列表
+        return { success: true, data: response.data }
       }
     } catch (err: any) {
-      setError(err.response?.data?.error || '加入失败')
-    } finally {
-      setActionLoading(false)
+      return { success: false, error: err.response?.data?.error || '加入失败' }
     }
   }
 
@@ -85,15 +94,14 @@ export default function RoomList() {
 
   return (
     <div>
+      {/* 邀请码搜索 */}
+      <div className="mb-8">
+        <InviteCodeSearch onJoinRoom={handleJoinRoom} />
+      </div>
+
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-800">我的房间</h1>
         <div className="flex gap-2">
-          <button
-            onClick={() => setShowJoinModal(true)}
-            className="px-4 py-2 border border-primary-500 text-primary-600 rounded-lg hover:bg-primary-50"
-          >
-            加入房间
-          </button>
           <button
             onClick={() => setShowCreateModal(true)}
             className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600"
@@ -123,6 +131,27 @@ export default function RoomList() {
         </div>
       )}
 
+      {/* 公开房间推荐 */}
+      {publicRooms.length > 0 && (
+        <div className="mt-12">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-bold text-gray-800">推荐房间</h2>
+            <span className="text-sm text-gray-500">公开房间，可以直接加入</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {publicRooms.map((room) => (
+              <RoomCard
+                key={room.id}
+                room={room}
+                isOwner={room.owner_id === user?.id}
+                isPublic={true}
+                onJoinRoom={handleJoinRoom}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* 创建房间弹窗 */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -147,23 +176,25 @@ export default function RoomList() {
                   required
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                   placeholder="给房间起个名字"
-                />
-              </div>
+                 />
+               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  房间描述（可选）
-                </label>
-                <textarea
-                  value={newRoomDescription}
-                  onChange={(e) => setNewRoomDescription(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                  placeholder="简单描述一下这个房间"
-                  rows={3}
-                />
-              </div>
+               <div>
+                 <label className="flex items-center space-x-2">
+                   <input
+                     type="checkbox"
+                     checked={newRoomIsPublic}
+                     onChange={(e) => setNewRoomIsPublic(e.target.checked)}
+                     className="rounded border-gray-300 text-primary-500 focus:ring-primary-500"
+                   />
+                   <span className="text-sm text-gray-700">设为公开房间（允许被推荐）</span>
+                 </label>
+                 <p className="text-xs text-gray-500 mt-1">
+                   公开房间会显示在推荐列表中，用户可以通过邀请码直接加入
+                 </p>
+               </div>
 
-              <div className="flex gap-2">
+               <div className="flex gap-2">
                 <button
                   type="button"
                   onClick={() => {
@@ -185,59 +216,7 @@ export default function RoomList() {
             </form>
           </div>
         </div>
-      )}
-
-      {/* 加入房间弹窗 */}
-      {showJoinModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h2 className="text-xl font-bold mb-4">加入房间</h2>
-            
-            {error && (
-              <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm">
-                {error}
-              </div>
-            )}
-
-            <form onSubmit={handleJoinRoom} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  邀请码
-                </label>
-                <input
-                  type="text"
-                  value={inviteCode}
-                  onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-                  required
-                  maxLength={6}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-center text-xl tracking-widest"
-                  placeholder="XXXXXX"
-                />
-              </div>
-
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowJoinModal(false)
-                    setError(null)
-                  }}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-                >
-                  取消
-                </button>
-                <button
-                  type="submit"
-                  disabled={actionLoading || inviteCode.length !== 6}
-                  className="flex-1 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 disabled:opacity-50"
-                >
-                  {actionLoading ? '加入中...' : '加入'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+       )}
     </div>
   )
 }
