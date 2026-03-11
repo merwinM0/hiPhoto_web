@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { authApi } from '../api/auth'
+import { authApi, userApi } from '../api/auth'
 import { useAuthStore } from '../stores/authStore'
 
 export default function Login() {
@@ -43,7 +43,7 @@ export default function Login() {
       console.log('User ID:', authData.user_id)
       
       if (authData.token && authData.user_id) {
-        // 创建一个临时的user对象，稍后可以通过userApi.getProfile获取完整信息
+        // 设置token和临时的user对象
         const tempUser = {
           id: authData.user_id,
           email: authData.email,
@@ -53,6 +53,19 @@ export default function Login() {
         }
         console.log('Setting auth with token:', authData.token)
         setAuth(authData.token, tempUser)
+        
+        // 立即获取用户的完整信息
+        try {
+          const profileResponse = await userApi.getProfile()
+          if (profileResponse.data) {
+            // 更新用户信息
+            setAuth(authData.token, profileResponse.data)
+          }
+        } catch (profileErr) {
+          console.error('Failed to fetch user profile:', profileErr)
+          // 即使获取用户信息失败，也继续登录流程
+        }
+        
         console.log('Navigating to:', from)
         navigate(from, { replace: true })
       } else {
