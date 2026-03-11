@@ -386,6 +386,7 @@ pub async fn get_room_members(
             user_id: member.user_id,
             username,
             role: member.role,
+            status: member.status,
             photo_count,
         });
     }

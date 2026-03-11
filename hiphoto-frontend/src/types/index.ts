@@ -36,6 +36,7 @@ export interface RoomMember {
   user_id: string
   username: string | null
   role: string
+  status: string
   photo_count: number
 }
 

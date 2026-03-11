@@ -75,10 +75,10 @@ export default function RoomList() {
     try {
       const response = await roomApi.joinRoom(inviteCode.toUpperCase())
       if (response.data) {
-        setRooms([...rooms, response.data])
         loadRooms() // 重新加载房间列表
         return { success: true, data: response.data }
       }
+      return { success: false, error: '加入失败' }
     } catch (err: any) {
       return { success: false, error: err.response?.data?.error || '加入失败' }
     }

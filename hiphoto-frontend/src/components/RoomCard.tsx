@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import type { Room } from '../types'
 
 interface RoomCardProps {
@@ -9,6 +9,8 @@ interface RoomCardProps {
 }
 
 export default function RoomCard({ room, isOwner = false, isPublic = false, onJoinRoom }: RoomCardProps) {
+  const navigate = useNavigate()
+  
   const handleJoinClick = async (e: React.MouseEvent) => {
     if (isPublic && onJoinRoom) {
       e.preventDefault()
@@ -16,8 +18,8 @@ export default function RoomCard({ room, isOwner = false, isPublic = false, onJo
       
       const result = await onJoinRoom(room.invite_code)
       if (result.success) {
-        // 可以在这里添加成功加入后的处理，比如跳转
-        window.location.href = `/rooms/${room.id}`
+        // 使用React Router导航
+        navigate(`/rooms/${room.id}`)
       }
     }
   }

@@ -111,6 +111,7 @@ pub struct RoomMemberResponse {
     pub user_id: String,
     pub username: Option<String>,
     pub role: String,
+    pub status: String,
     pub photo_count: i32,
 }
 

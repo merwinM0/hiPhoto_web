@@ -70,6 +70,24 @@ export default function RoomDetail() {
     }
   }
 
+  const handleApproveMember = async (userId: string) => {
+    if (!roomId) return
+    
+    if (confirm('确定要批准该成员加入吗？')) {
+      await roomApi.approveMember(roomId, userId)
+      await loadRoomData()
+    }
+  }
+
+  const handleRejectMember = async (userId: string) => {
+    if (!roomId) return
+    
+    if (confirm('确定要拒绝该成员加入吗？')) {
+      await roomApi.rejectMember(roomId, userId)
+      await loadRoomData()
+    }
+  }
+
   const handleEndRound = async () => {
     if (!roomId) return
     
@@ -195,46 +213,96 @@ export default function RoomDetail() {
 
       {/* 成员列表 */}
       {activeTab === 'members' && (
-        <div className="bg-white rounded-lg shadow-sm">
-          <div className="divide-y divide-gray-100">
-            {members.map((member) => (
-              <div
-                key={member.user_id}
-                className="flex items-center justify-between p-4"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
-                    <span className="text-primary-600 font-medium">
-                      {(member.username || 'U')[0].toUpperCase()}
+        <div className="space-y-6">
+          {/* 已批准成员 */}
+          <div className="bg-white rounded-lg shadow-sm">
+            <div className="p-4 border-b border-gray-100">
+              <h3 className="font-semibold">已批准成员 ({members.filter(m => m.status === 'approved').length})</h3>
+            </div>
+            <div className="divide-y divide-gray-100">
+              {members.filter(member => member.status === 'approved').map((member) => (
+                <div
+                  key={member.user_id}
+                  className="flex items-center justify-between p-4"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
+                      <span className="text-primary-600 font-medium">
+                        {(member.username || 'U')[0].toUpperCase()}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="font-medium">{member.username || '未设置用户名'}</p>
+                      <p className="text-sm text-gray-500">
+                        {member.photo_count} 张照片
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xs px-2 py-1 rounded ${
+                      member.role === 'owner'
+                        ? 'bg-yellow-100 text-yellow-700'
+                        : 'bg-gray-100 text-gray-700'
+                    }`}>
+                      {member.role === 'owner' ? '房主' : '成员'}
                     </span>
-                  </div>
-                  <div>
-                    <p className="font-medium">{member.username || '未设置用户名'}</p>
-                    <p className="text-sm text-gray-500">
-                      {member.photo_count} 张照片
-                    </p>
+                    {isOwner && member.role !== 'owner' && (
+                      <button
+                        onClick={() => handleKickMember(member.user_id)}
+                        className="text-sm text-red-500 hover:text-red-600"
+                      >
+                        移除
+                      </button>
+                    )}
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className={`text-xs px-2 py-1 rounded ${
-                    member.role === 'owner'
-                      ? 'bg-yellow-100 text-yellow-700'
-                      : 'bg-gray-100 text-gray-700'
-                  }`}>
-                    {member.role === 'owner' ? '房主' : '成员'}
-                  </span>
-                  {isOwner && member.role !== 'owner' && (
-                    <button
-                      onClick={() => handleKickMember(member.user_id)}
-                      className="text-sm text-red-500 hover:text-red-600"
-                    >
-                      移除
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
+
+          {/* 待审批成员 */}
+          {isOwner && members.filter(m => m.status === 'pending').length > 0 && (
+            <div className="bg-yellow-50 rounded-lg shadow-sm border border-yellow-200">
+              <div className="p-4 border-b border-yellow-200">
+                <h3 className="font-semibold text-yellow-800">待审批成员 ({members.filter(m => m.status === 'pending').length})</h3>
+                <p className="text-sm text-yellow-600 mt-1">这些用户申请加入房间，等待您的审批</p>
+              </div>
+              <div className="divide-y divide-yellow-100">
+                {members.filter(member => member.status === 'pending').map((member) => (
+                  <div
+                    key={member.user_id}
+                    className="flex items-center justify-between p-4"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+                        <span className="text-yellow-600 font-medium">
+                          {(member.username || 'U')[0].toUpperCase()}
+                        </span>
+                      </div>
+                      <div>
+                        <p className="font-medium">{member.username || '未设置用户名'}</p>
+                        <p className="text-sm text-yellow-600">等待审批中</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleApproveMember(member.user_id)}
+                        className="px-3 py-1 text-sm bg-green-500 text-white rounded-lg hover:bg-green-600"
+                      >
+                        批准
+                      </button>
+                      <button
+                        onClick={() => handleRejectMember(member.user_id)}
+                        className="px-3 py-1 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600"
+                      >
+                        拒绝
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

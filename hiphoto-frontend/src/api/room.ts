@@ -37,4 +37,16 @@ export const roomApi = {
   leaveRoom: async (roomId: string): Promise<ApiResponse<{ message: string }>> => {
     return apiCall(api.post(`/rooms/${roomId}/leave`))
   },
+
+  joinPublicRoom: async (roomId: string): Promise<ApiResponse<{ message: string; room_id: string }>> => {
+    return apiCall(api.post('/rooms/join-public', { room_id: roomId }))
+  },
+
+  approveMember: async (roomId: string, userId: string): Promise<ApiResponse<{ message: string }>> => {
+    return apiCall(api.post(`/rooms/${roomId}/members/${userId}/approve`))
+  },
+
+  rejectMember: async (roomId: string, userId: string): Promise<ApiResponse<{ message: string }>> => {
+    return apiCall(api.post(`/rooms/${roomId}/members/${userId}/reject`))
+  },
 }
