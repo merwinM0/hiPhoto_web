@@ -1,5 +1,5 @@
 import api, { apiCall } from './index'
-import type { ApiResponse, Room, RoomMember } from '../types'
+import type { ApiResponse, Room, RoomMember, JoinRequest, PendingRequestCount } from '../types'
 
 export const roomApi = {
   getRooms: async (): Promise<ApiResponse<Room[]>> => {
@@ -48,5 +48,13 @@ export const roomApi = {
 
   rejectMember: async (roomId: string, userId: string): Promise<ApiResponse<{ message: string }>> => {
     return apiCall(api.post(`/rooms/${roomId}/members/${userId}/reject`))
+  },
+
+  getPendingRequests: async (): Promise<ApiResponse<JoinRequest[]>> => {
+    return apiCall(api.get('/rooms/pending-requests'))
+  },
+
+  getPendingRequestCount: async (): Promise<ApiResponse<PendingRequestCount>> => {
+    return apiCall(api.get('/rooms/pending-request-count'))
   },
 }

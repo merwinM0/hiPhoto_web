@@ -116,3 +116,18 @@ pub struct RoomMemberResponse {
     pub photo_count: i32,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct JoinRequest {
+    pub room_id: String,
+    pub room_name: String,
+    pub user_id: String,
+    pub username: Option<String>,
+    pub status: String,
+    pub created_at: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct PendingRequestCount {
+    pub count: i32,
+}
+

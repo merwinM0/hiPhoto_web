@@ -6,6 +6,7 @@ import RoomCard from '../components/RoomCard'
 import CreateRoomModal from '../components/CreateRoomModal'
 
 export default function Home() {
+  const { user } = useAuthStore()
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated())
   const [rooms, setRooms] = useState<Room[]>([])
   const [loading, setLoading] = useState(true)
@@ -32,6 +33,18 @@ export default function Home() {
       console.error('Failed to fetch rooms:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleJoinPublicRoom = async (roomId: string) => {
+    try {
+      const response = await roomApi.joinPublicRoom(roomId)
+      if (response.data) {
+        return { success: true, data: response.data, message: response.data.message }
+      }
+      return { success: false, error: response.error || '申请失败' }
+    } catch (err: any) {
+      return { success: false, error: err.response?.data?.error || '申请失败' }
     }
   }
 
@@ -160,7 +173,10 @@ export default function Home() {
                 <RoomCard 
                   key={room.id} 
                   room={room} 
-                  isOwner={showMyRooms && room.owner_id === useAuthStore.getState().user?.id}
+                  isOwner={room.owner_id === user?.id}
+                  isPublic={!showMyRooms}
+                  onJoinRoom={!showMyRooms ? handleJoinPublicRoom : undefined}
+                  onJoinSuccess={fetchRooms}
                 />
               ))}
             </div>

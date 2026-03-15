@@ -116,3 +116,16 @@ export interface AuthResponse {
   email: string
   message: string
 }
+
+export interface JoinRequest {
+  room_id: string
+  room_name: string
+  user_id: string
+  username: string | null
+  status: string
+  created_at: string | null
+}
+
+export interface PendingRequestCount {
+  count: number
+}

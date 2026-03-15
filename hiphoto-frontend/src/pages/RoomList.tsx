@@ -158,6 +158,7 @@ export default function RoomList() {
                 isOwner={room.owner_id === user?.id}
                 isPublic={true}
                 onJoinRoom={handleJoinPublicRoom}
+                onJoinSuccess={loadPublicRooms}
               />
             ))}
           </div>

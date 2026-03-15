@@ -32,10 +32,19 @@ api.interceptors.response.use(
   },
   (error) => {
     console.log('API response error:', error.config?.url, error.response?.status, error.message)
-    if (error.response?.status === 401) {
-      console.log('Unauthorized, logging out')
-      useAuthStore.getState().logout()
-      window.location.href = '/login'
+    const isAuthEndpoint = error.config?.url?.startsWith('/auth/')
+    if (error.response?.status === 401 && !isAuthEndpoint) {
+      const errorMsg = error.response?.data?.error || ''
+      const isTokenError = 
+        errorMsg.includes('Invalid token') || 
+        errorMsg.includes('Missing authorization header') ||
+        errorMsg.includes('Invalid authorization header') ||
+        errorMsg.includes('expired')
+      if (isTokenError) {
+        console.log('Token invalid, logging out')
+        useAuthStore.getState().logout()
+        window.location.href = '/login'
+      }
     }
     return Promise.reject(error)
   }
@@ -54,7 +63,9 @@ export async function apiCall<T>(promise: Promise<any>): Promise<ApiResponse<T>>
         error: error.response.data.error
       }
     }
-    throw error
+    return {
+      error: error.message || '请求失败'
+    }
   }
 }
 

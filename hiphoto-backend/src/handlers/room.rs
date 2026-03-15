@@ -12,6 +12,7 @@ use crate::services::auth::AuthUser;
 use crate::models::{
     CreateRoomRequest, UpdateRoomRequest, JoinRoomRequest, JoinPublicRoomRequest,
     Room, RoomMember, RoomResponse, RoomMemberResponse, ScoringCriteria,
+    JoinRequest, PendingRequestCount,
 };
 
 pub async fn create_room(
@@ -240,7 +241,7 @@ pub async fn join_public_room(
     let (is_public,) = room.ok_or_else(|| AppError::NotFound("Room not found".to_string()))?;
 
     if !is_public {
-        return Err(AppError::Auth("Room is not public".to_string()));
+        return Err(AppError::Validation("Room is not public".to_string()));
     }
 
     // 检查是否已是成员
@@ -550,7 +551,6 @@ pub async fn get_public_rooms(
     State((pool, _config)): State<(SqlitePool, Config)>,
     Extension(auth_user): Extension<AuthUser>,
 ) -> Result<Json<Vec<RoomResponse>>> {
-    // 获取所有公开房间
     let rooms = sqlx::query_as::<_, Room>(
         "SELECT r.* FROM rooms r WHERE r.is_public = 1"
     )
@@ -559,22 +559,22 @@ pub async fn get_public_rooms(
 
     let mut responses = Vec::new();
     for room in rooms {
-        // 检查用户是否已经加入该房间
-        let is_member: bool = sqlx::query_scalar(
-            "SELECT COUNT(*) > 0 FROM room_members WHERE room_id = ? AND user_id = ? AND status = 'approved'"
+        let member_status: Option<String> = sqlx::query_scalar(
+            "SELECT status FROM room_members WHERE room_id = ? AND user_id = ?"
         )
         .bind(&room.id)
         .bind(&auth_user.user_id)
-        .fetch_one(&pool)
+        .fetch_optional(&pool)
         .await?;
 
-        // 如果已经加入，跳过
-        if is_member {
-            continue;
+        if let Some(status) = member_status {
+            if status == "approved" || status == "pending" {
+                continue;
+            }
         }
 
         let member_count: i32 = sqlx::query_scalar(
-            "SELECT COUNT(*) FROM room_members WHERE room_id = ?"
+            "SELECT COUNT(*) FROM room_members WHERE room_id = ? AND status = 'approved'"
         )
         .bind(&room.id)
         .fetch_one(&pool)
@@ -607,4 +607,50 @@ pub async fn get_public_rooms(
     }
 
     Ok(Json(responses))
+}
+
+pub async fn get_pending_requests(
+    State((pool, _config)): State<(SqlitePool, Config)>,
+    Extension(auth_user): Extension<AuthUser>,
+) -> Result<Json<Vec<JoinRequest>>> {
+    let requests = sqlx::query_as::<_, (String, String, String, Option<String>, String, Option<String>)>(
+        r#"SELECT rm.room_id, r.name, rm.user_id, u.username, rm.status, rm.joined_at
+           FROM room_members rm
+           INNER JOIN rooms r ON rm.room_id = r.id
+           INNER JOIN users u ON rm.user_id = u.id
+           WHERE r.owner_id = ? AND rm.status = 'pending'"#
+    )
+    .bind(&auth_user.user_id)
+    .fetch_all(&pool)
+    .await?;
+
+    let join_requests: Vec<JoinRequest> = requests
+        .into_iter()
+        .map(|(room_id, room_name, user_id, username, status, created_at)| JoinRequest {
+            room_id,
+            room_name,
+            user_id,
+            username,
+            status,
+            created_at,
+        })
+        .collect();
+
+    Ok(Json(join_requests))
+}
+
+pub async fn get_pending_request_count(
+    State((pool, _config)): State<(SqlitePool, Config)>,
+    Extension(auth_user): Extension<AuthUser>,
+) -> Result<Json<PendingRequestCount>> {
+    let count: i32 = sqlx::query_scalar(
+        r#"SELECT COUNT(*) FROM room_members rm
+           INNER JOIN rooms r ON rm.room_id = r.id
+           WHERE r.owner_id = ? AND rm.status = 'pending'"#
+    )
+    .bind(&auth_user.user_id)
+    .fetch_one(&pool)
+    .await?;
+
+    Ok(Json(PendingRequestCount { count }))
 }

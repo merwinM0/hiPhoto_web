@@ -3,12 +3,16 @@ import { useAuthStore } from '../stores/authStore'
 import { useState, useRef, useEffect } from 'react'
 import UserAvatar from './UserAvatar'
 import { userApi } from '../api/auth'
+import { roomApi } from '../api/room'
+import type { JoinRequest } from '../types'
 
 export default function Navbar() {
   const { user, logout } = useAuthStore()
   const navigate = useNavigate()
   const [showDropdown, setShowDropdown] = useState(false)
   const [showProfileModal, setShowProfileModal] = useState(false)
+  const [showMessageModal, setShowMessageModal] = useState(false)
+  const [pendingCount, setPendingCount] = useState(0)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -21,6 +25,25 @@ export default function Navbar() {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
+
+  useEffect(() => {
+    if (user) {
+      loadPendingCount()
+      const interval = setInterval(loadPendingCount, 30000)
+      return () => clearInterval(interval)
+    }
+  }, [user])
+
+  const loadPendingCount = async () => {
+    try {
+      const response = await roomApi.getPendingRequestCount()
+      if (response.data) {
+        setPendingCount(response.data.count)
+      }
+    } catch (err) {
+      console.error('Failed to load pending count:', err)
+    }
+  }
 
   const handleLogout = () => {
     logout()
@@ -54,7 +77,21 @@ export default function Navbar() {
             
             <div className="flex items-center gap-4" ref={dropdownRef}>
               {user ? (
-                <div className="relative">
+                <div className="relative flex items-center gap-3">
+                  <button
+                    onClick={() => setShowMessageModal(true)}
+                    className="relative p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-full"
+                    title="消息"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                    </svg>
+                    {pendingCount > 0 && (
+                      <span className="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-500 rounded-full">
+                        {pendingCount > 99 ? '99+' : pendingCount}
+                      </span>
+                    )}
+                  </button>
                   <UserAvatar onClick={handleAvatarClick} />
                   
                    {showDropdown && (
@@ -114,6 +151,15 @@ export default function Navbar() {
           onClose={() => setShowProfileModal(false)}
         />
       )}
+
+      {showMessageModal && (
+        <MessageModal
+          onClose={() => {
+            setShowMessageModal(false)
+            loadPendingCount()
+          }}
+        />
+      )}
     </>
   )
 }
@@ -121,6 +167,125 @@ export default function Navbar() {
 interface ProfileModalProps {
   user: any
   onClose: () => void
+}
+
+interface MessageModalProps {
+  onClose: () => void
+}
+
+function MessageModal({ onClose }: MessageModalProps) {
+  const [requests, setRequests] = useState<JoinRequest[]>([])
+  const [loading, setLoading] = useState(true)
+  const [actionLoading, setActionLoading] = useState<string | null>(null)
+
+  useEffect(() => {
+    loadRequests()
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', handleEscape)
+    return () => document.removeEventListener('keydown', handleEscape)
+  }, [onClose])
+
+  const loadRequests = async () => {
+    try {
+      const response = await roomApi.getPendingRequests()
+      if (response.data) {
+        setRequests(response.data)
+      }
+    } catch (err) {
+      console.error('Failed to load requests:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleApprove = async (roomId: string, userId: string) => {
+    setActionLoading(`${roomId}-${userId}-approve`)
+    try {
+      await roomApi.approveMember(roomId, userId)
+      setRequests(requests.filter(r => !(r.room_id === roomId && r.user_id === userId)))
+    } catch (err) {
+      console.error('Failed to approve:', err)
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const handleReject = async (roomId: string, userId: string) => {
+    setActionLoading(`${roomId}-${userId}-reject`)
+    try {
+      await roomApi.rejectMember(roomId, userId)
+      setRequests(requests.filter(r => !(r.room_id === roomId && r.user_id === userId)))
+    } catch (err) {
+      console.error('Failed to reject:', err)
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[80vh] overflow-hidden">
+        <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+          <h2 className="text-lg font-bold text-gray-800">消息</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        
+        <div className="overflow-y-auto max-h-[60vh]">
+          {loading ? (
+            <div className="flex justify-center items-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
+            </div>
+          ) : requests.length === 0 ? (
+            <div className="py-12 text-center text-gray-500">
+              <svg className="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+              </svg>
+              暂无新消息
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-100">
+              {requests.map((request) => (
+                <div key={`${request.room_id}-${request.user_id}`} className="p-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <p className="text-sm text-gray-800">
+                        <span className="font-medium">{request.username || '未知用户'}</span>
+                        <span className="text-gray-500"> 申请加入 </span>
+                        <span className="font-medium">{request.room_name}</span>
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex gap-2">
+                    <button
+                      onClick={() => handleApprove(request.room_id, request.user_id)}
+                      disabled={actionLoading !== null}
+                      className="flex-1 px-3 py-1.5 text-sm bg-primary-500 text-white rounded hover:bg-primary-600 disabled:opacity-50"
+                    >
+                      {actionLoading === `${request.room_id}-${request.user_id}-approve` ? '处理中...' : '接受'}
+                    </button>
+                    <button
+                      onClick={() => handleReject(request.room_id, request.user_id)}
+                      disabled={actionLoading !== null}
+                      className="flex-1 px-3 py-1.5 text-sm border border-gray-300 text-gray-700 rounded hover:bg-gray-50 disabled:opacity-50"
+                    >
+                      {actionLoading === `${request.room_id}-${request.user_id}-reject` ? '处理中...' : '拒绝'}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
 }
 
 function ProfileModal({ user, onClose }: ProfileModalProps) {

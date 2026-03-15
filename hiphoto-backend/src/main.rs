@@ -72,6 +72,8 @@ fn create_app(pool: SqlitePool, config: Config) -> Router {
         .route("/api/rooms/join", post(room::join_room))
         .route("/api/rooms/join-public", post(room::join_public_room))
         .route("/api/rooms/public", get(room::get_public_rooms))
+        .route("/api/rooms/pending-requests", get(room::get_pending_requests))
+        .route("/api/rooms/pending-request-count", get(room::get_pending_request_count))
         .route("/api/rooms/:room_id/members", get(room::get_room_members))
         .route(
             "/api/rooms/:room_id/members/:user_id/approve",
