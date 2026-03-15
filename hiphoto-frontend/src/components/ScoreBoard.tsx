@@ -1,4 +1,4 @@
-import type { ScoreBoardEntry, ScoreRound } from '../types'
+import type { ScoreRound } from '../types'
 
 interface ScoreBoardProps {
   scoreRound: ScoreRound

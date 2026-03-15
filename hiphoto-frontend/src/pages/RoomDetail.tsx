@@ -4,7 +4,7 @@ import { roomApi, photoApi, scoreApi } from '../api'
 import { useAuthStore } from '../stores/authStore'
 import PhotoUploader from '../components/PhotoUploader'
 import ScoreBoard from '../components/ScoreBoard'
-import type { Room, RoomMember, Photo, ScoreRound, Tag } from '../types'
+import type { Room, RoomMember, Photo, ScoreRound } from '../types'
 
 type Tab = 'photos' | 'members' | 'scoreboard' | 'settings'
 
@@ -53,14 +53,19 @@ export default function RoomDetail() {
       console.log('Members response:', membersRes)
       console.log('Score response:', scoreRes)
 
-      if (roomRes.data) setRoom(roomRes.data)
+      if (roomRes.data) {
+        setRoom(roomRes.data)
+      } else if (roomRes.error) {
+        console.log('Room API returned error:', roomRes.error)
+        setError(`房间加载失败: ${roomRes.error}`)
+      } else {
+        console.log('Room API returned no data and no error')
+        setError('房间加载失败：未知错误')
+      }
+      
       if (photosRes.data) setPhotos(photosRes.data)
       if (membersRes.data) setMembers(membersRes.data)
       if (scoreRes.data) setScoreRound(scoreRes.data)
-      
-      if (roomRes.error) {
-        setError(`房间加载失败: ${roomRes.error}`)
-      }
     } catch (err) {
       console.error('Failed to load room:', err)
       setError(`加载失败: ${err instanceof Error ? err.message : '未知错误'}`)

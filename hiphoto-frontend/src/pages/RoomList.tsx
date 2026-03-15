@@ -84,6 +84,18 @@ export default function RoomList() {
     }
   }
 
+  const handleJoinPublicRoom = async (roomId: string) => {
+    try {
+      const response = await roomApi.joinPublicRoom(roomId)
+      if (response.data) {
+        return { success: true, data: response.data, message: response.data.message }
+      }
+      return { success: false, error: '申请失败' }
+    } catch (err: any) {
+      return { success: false, error: err.response?.data?.error || '申请失败' }
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -136,7 +148,7 @@ export default function RoomList() {
         <div className="mt-12">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-bold text-gray-800">推荐房间</h2>
-            <span className="text-sm text-gray-500">公开房间，可以直接加入</span>
+             <span className="text-sm text-gray-500">公开房间，需要房主审批</span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {publicRooms.map((room) => (
@@ -145,7 +157,7 @@ export default function RoomList() {
                 room={room}
                 isOwner={room.owner_id === user?.id}
                 isPublic={true}
-                onJoinRoom={handleJoinRoom}
+                onJoinRoom={handleJoinPublicRoom}
               />
             ))}
           </div>

@@ -17,17 +17,28 @@ pub async fn upload_photo(
     Path(room_id): Path<String>,
     Json(payload): Json<UploadPhotoRequest>,
 ) -> Result<Json<PhotoResponse>> {
-    // 验证成员身份
-    let is_member: bool = sqlx::query_scalar(
-        "SELECT COUNT(*) > 0 FROM room_members WHERE room_id = ? AND user_id = ? AND status = 'approved'"
+    // 首先检查是否是房主
+    let is_owner: bool = sqlx::query_scalar(
+        "SELECT COUNT(*) > 0 FROM rooms WHERE id = ? AND owner_id = ?"
     )
     .bind(&room_id)
     .bind(&auth_user.user_id)
     .fetch_one(&pool)
     .await?;
 
-    if !is_member {
-        return Err(AppError::Auth("Not an approved member of this room".to_string()));
+    // 如果不是房主，检查是否是已批准的成员
+    if !is_owner {
+        let is_member: bool = sqlx::query_scalar(
+            "SELECT COUNT(*) > 0 FROM room_members WHERE room_id = ? AND user_id = ? AND status = 'approved'"
+        )
+        .bind(&room_id)
+        .bind(&auth_user.user_id)
+        .fetch_one(&pool)
+        .await?;
+
+        if !is_member {
+            return Err(AppError::Auth("Not an approved member of this room".to_string()));
+        }
     }
 
     // 检查上传限制
@@ -181,17 +192,28 @@ pub async fn get_photo(
     .fetch_one(&pool)
     .await?;
 
-    // 验证成员身份（必须是已批准的成员）
-    let is_approved_member: bool = sqlx::query_scalar(
-        "SELECT COUNT(*) > 0 FROM room_members WHERE room_id = ? AND user_id = ? AND status = 'approved'"
+    // 首先检查是否是房主
+    let is_owner: bool = sqlx::query_scalar(
+        "SELECT COUNT(*) > 0 FROM rooms WHERE id = ? AND owner_id = ?"
     )
     .bind(&photo.room_id)
     .bind(&auth_user.user_id)
     .fetch_one(&pool)
     .await?;
 
-    if !is_approved_member {
-        return Err(AppError::Auth("Not an approved member of this room".to_string()));
+    // 如果不是房主，检查是否是已批准的成员
+    if !is_owner {
+        let is_approved_member: bool = sqlx::query_scalar(
+            "SELECT COUNT(*) > 0 FROM room_members WHERE room_id = ? AND user_id = ? AND status = 'approved'"
+        )
+        .bind(&photo.room_id)
+        .bind(&auth_user.user_id)
+        .fetch_one(&pool)
+        .await?;
+
+        if !is_approved_member {
+            return Err(AppError::Auth("Not an approved member of this room".to_string()));
+        }
     }
 
     let uploader_name: Option<String> = sqlx::query_scalar(

@@ -119,17 +119,28 @@ pub async fn get_room(
     Extension(auth_user): Extension<AuthUser>,
     Path(room_id): Path<String>,
 ) -> Result<Json<RoomResponse>> {
-    // 验证成员身份（必须是已批准的成员）
-    let is_approved_member: bool = sqlx::query_scalar(
-        "SELECT COUNT(*) > 0 FROM room_members WHERE room_id = ? AND user_id = ? AND status = 'approved'"
+    // 首先检查是否是房主
+    let is_owner: bool = sqlx::query_scalar(
+        "SELECT COUNT(*) > 0 FROM rooms WHERE id = ? AND owner_id = ?"
     )
     .bind(&room_id)
     .bind(&auth_user.user_id)
     .fetch_one(&pool)
     .await?;
 
-    if !is_approved_member {
-        return Err(AppError::Auth("Not an approved member of this room".to_string()));
+    // 如果不是房主，检查是否是已批准的成员
+    if !is_owner {
+        let is_approved_member: bool = sqlx::query_scalar(
+            "SELECT COUNT(*) > 0 FROM room_members WHERE room_id = ? AND user_id = ? AND status = 'approved'"
+        )
+        .bind(&room_id)
+        .bind(&auth_user.user_id)
+        .fetch_one(&pool)
+        .await?;
+
+        if !is_approved_member {
+            return Err(AppError::Auth("Not an approved member of this room".to_string()));
+        }
     }
 
     let room = sqlx::query_as::<_, Room>(
@@ -344,17 +355,28 @@ pub async fn get_room_members(
     Extension(auth_user): Extension<AuthUser>,
     Path(room_id): Path<String>,
 ) -> Result<Json<Vec<RoomMemberResponse>>> {
-    // 验证成员身份（必须是已批准的成员）
-    let is_approved_member: bool = sqlx::query_scalar(
-        "SELECT COUNT(*) > 0 FROM room_members WHERE room_id = ? AND user_id = ? AND status = 'approved'"
+    // 首先检查是否是房主
+    let is_owner: bool = sqlx::query_scalar(
+        "SELECT COUNT(*) > 0 FROM rooms WHERE id = ? AND owner_id = ?"
     )
     .bind(&room_id)
     .bind(&auth_user.user_id)
     .fetch_one(&pool)
     .await?;
 
-    if !is_approved_member {
-        return Err(AppError::Auth("Not an approved member of this room".to_string()));
+    // 如果不是房主，检查是否是已批准的成员
+    if !is_owner {
+        let is_approved_member: bool = sqlx::query_scalar(
+            "SELECT COUNT(*) > 0 FROM room_members WHERE room_id = ? AND user_id = ? AND status = 'approved'"
+        )
+        .bind(&room_id)
+        .bind(&auth_user.user_id)
+        .fetch_one(&pool)
+        .await?;
+
+        if !is_approved_member {
+            return Err(AppError::Auth("Not an approved member of this room".to_string()));
+        }
     }
 
     let members = sqlx::query_as::<_, RoomMember>(

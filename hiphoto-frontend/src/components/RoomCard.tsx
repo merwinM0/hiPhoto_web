@@ -1,11 +1,11 @@
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import type { Room } from '../types'
 
 interface RoomCardProps {
   room: Room
   isOwner?: boolean
   isPublic?: boolean
-  onJoinRoom?: (inviteCode: string) => Promise<{ success: boolean; error?: string; data?: any }>
+  onJoinRoom?: (roomIdOrInviteCode: string) => Promise<{ success: boolean; error?: string; data?: any; message?: string }>
 }
 
 export default function RoomCard({ room, isOwner = false, isPublic = false, onJoinRoom }: RoomCardProps) {
@@ -16,16 +16,26 @@ export default function RoomCard({ room, isOwner = false, isPublic = false, onJo
       e.preventDefault()
       e.stopPropagation()
       
-      const result = await onJoinRoom(room.invite_code)
+      const result = await onJoinRoom(room.id)
       if (result.success) {
-        // 使用React Router导航
-        navigate(`/rooms/${room.id}`)
+        if (result.message?.includes('waiting for approval')) {
+          // 需要审批，显示提示信息
+          alert('已提交加入申请，等待房主审批')
+        } else {
+          // 直接批准，导航到房间
+          navigate(`/rooms/${room.id}`)
+        }
+      } else {
+        alert(result.error || '加入失败')
       }
     }
   }
 
-  const CardContent = () => (
-    <div className="block p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow">
+  const CardContent = ({ onClick }: { onClick?: () => void }) => (
+    <div 
+      className="block p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+      onClick={onClick}
+    >
       <div className="flex justify-between items-start">
         <div className="flex-1">
           <h3 className="text-lg font-semibold text-gray-800">{room.name}</h3>
@@ -64,23 +74,23 @@ export default function RoomCard({ room, isOwner = false, isPublic = false, onJo
             onClick={handleJoinClick}
             className="w-full px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 text-sm font-medium"
           >
-            立即加入
+            申请加入
           </button>
           <p className="mt-1 text-xs text-gray-500 text-center">
-            通过邀请码直接加入
+            需要房主审批
           </p>
         </div>
       )}
+
+
     </div>
   )
 
   if (isPublic && !isOwner) {
-    return <CardContent />
+    return <CardContent onClick={() => {}} />
   }
 
   return (
-    <Link to={`/rooms/${room.id}`}>
-      <CardContent />
-    </Link>
+    <CardContent onClick={() => navigate(`/rooms/${room.id}`)} />
   )
 }

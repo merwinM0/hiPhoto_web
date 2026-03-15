@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { photoApi, tagApi, scoreApi } from '../api'
 import { useAuthStore } from '../stores/authStore'
 import PhotoViewer from '../components/PhotoViewer'
-import type { PhotoDetail, Tag } from '../types'
+import type { PhotoDetail } from '../types'
 
 export default function PhotoDetail() {
   const { photoId } = useParams<{ photoId: string }>()
