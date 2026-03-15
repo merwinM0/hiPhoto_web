@@ -129,6 +129,9 @@ export default function RoomDetail() {
 
   console.log('RoomDetail render state:', { loading, error, room, photos, members, scoreRound })
 
+  // 然后在 return 之前添加
+  console.log('Rendering with room:', room?.name)
+
   if (loading) {
     console.log('RoomDetail: Showing loading state')
     return (
@@ -166,7 +169,6 @@ export default function RoomDetail() {
 
   return (
     <div>
-      {/* 房间信息 */}
       <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
         <div className="flex justify-between items-start">
           <div>
