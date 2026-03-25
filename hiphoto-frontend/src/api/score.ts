@@ -6,6 +6,10 @@ export const scoreApi = {
     return apiCall(api.post('/scores', data))
   },
 
+  getUserScoresForPhoto: async (photoId: string): Promise<ApiResponse<Score[]>> => {
+    return apiCall(api.get(`/photos/${photoId}/scores`))
+  },
+
   getScoreboard: async (roomId: string): Promise<ApiResponse<ScoreRound>> => {
     return apiCall(api.get(`/rooms/${roomId}/scoreboard`))
   },

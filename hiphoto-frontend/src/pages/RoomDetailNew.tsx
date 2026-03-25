@@ -19,7 +19,7 @@ export default function RoomDetail() {
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0)
   const [showUploadModal, setShowUploadModal] = useState(false)
   const [showSettingsModal, setShowSettingsModal] = useState(false)
-  const [scoreValue, setScoreValue] = useState(5)
+  const [scores, setScores] = useState<Record<string, number>>({})
 
   const isOwner = room?.owner_id === user?.id
 
@@ -99,16 +99,38 @@ export default function RoomDetail() {
     }
   }
 
+  const handleScoreChange = (criteriaName: string, value: number) => {
+    setScores(prev => ({
+      ...prev,
+      [criteriaName]: value
+    }))
+  }
+
   const handleSubmitScore = async () => {
-    if (!roomId || !photos[currentPhotoIndex]) return
+    if (!roomId || !photos[currentPhotoIndex] || !room?.scoring_criteria) return
     
+    // 检查是否所有标准都已评分
+    const criteriaNames = room.scoring_criteria.criteria.map(c => c.name)
+    const missingCriteria = criteriaNames.filter(name => scores[name] === undefined)
+    
+    if (missingCriteria.length > 0) {
+      alert(`请完成所有评分标准：${missingCriteria.join(', ')}`)
+      return
+    }
+
     try {
-      await scoreApi.submitScore({
-        photo_id: photos[currentPhotoIndex].id,
-        criteria_type: 'overall',
-        score: scoreValue
-      })
+      // 为每个评分标准提交评分
+      const promises = criteriaNames.map(criteriaName => 
+        scoreApi.submitScore({
+          photo_id: photos[currentPhotoIndex].id,
+          criteria_type: criteriaName,
+          score: scores[criteriaName]
+        })
+      )
+      
+      await Promise.all(promises)
       alert('评分提交成功！')
+      setScores({}) // 清空评分
     } catch (err) {
       alert('评分提交失败')
     }
@@ -141,6 +163,32 @@ export default function RoomDetail() {
   const handleNextPhoto = () => {
     setCurrentPhotoIndex(prev => prev < photos.length - 1 ? prev + 1 : 0)
   }
+
+  // 加载当前照片的评分
+  useEffect(() => {
+    const loadCurrentPhotoScores = async () => {
+      if (!roomId || !photos[currentPhotoIndex] || !room?.scoring_criteria) return
+      
+      try {
+        const response = await scoreApi.getUserScoresForPhoto(photos[currentPhotoIndex].id)
+        if (response.data) {
+          // 将评分转换为对象格式
+          const userScores: Record<string, number> = {}
+          response.data.forEach(score => {
+            userScores[score.criteria_type] = score.score
+          })
+          setScores(userScores)
+        } else {
+          setScores({})
+        }
+      } catch (err) {
+        console.error('加载评分失败:', err)
+        setScores({})
+      }
+    }
+    
+    loadCurrentPhotoScores()
+  }, [currentPhotoIndex, photos, roomId, room?.scoring_criteria])
 
   if (loading) {
     return (
@@ -281,34 +329,58 @@ export default function RoomDetail() {
                   </div>
 
                   {/* 评分栏 */}
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="font-medium text-gray-800">评分 (1-10分)</h4>
-                      <span className="text-primary-600 font-bold text-lg">{scoreValue} 分</span>
+                  {room.scoring_criteria && room.scoring_criteria.criteria.length > 0 ? (
+                    <div className="bg-gray-50 rounded-lg p-4 space-y-4">
+                      <h4 className="font-medium text-gray-800">评分</h4>
+                      
+                      {room.scoring_criteria.criteria.map((criterion) => (
+                        <div key={criterion.name} className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <p className="font-medium text-gray-700">{criterion.name}</p>
+                              {criterion.description && (
+                                <p className="text-xs text-gray-500">{criterion.description}</p>
+                              )}
+                            </div>
+                            <span className="text-primary-600 font-bold text-lg">
+                              {scores[criterion.name] || 0} / {criterion.max_score} 分
+                            </span>
+                          </div>
+                          <input
+                            type="range"
+                            min="0"
+                            max={criterion.max_score}
+                            value={scores[criterion.name] || 0}
+                            onChange={(e) => handleScoreChange(criterion.name, parseInt(e.target.value))}
+                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                          />
+                          <div className="flex justify-between text-xs text-gray-500">
+                            <span>0分</span>
+                            <span>{Math.floor(criterion.max_score / 2)}分</span>
+                            <span>{criterion.max_score}分</span>
+                          </div>
+                        </div>
+                      ))}
+                      
+                      <button
+                        onClick={handleSubmitScore}
+                        disabled={Object.keys(scores).length !== room.scoring_criteria.criteria.length}
+                        className="w-full px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {Object.keys(scores).length === room.scoring_criteria.criteria.length 
+                          ? '提交评分' 
+                          : `请完成所有评分 (${Object.keys(scores).length}/${room.scoring_criteria.criteria.length})`}
+                      </button>
+                      <p className="text-xs text-gray-500 text-center">
+                        同一张图片重复提交会覆盖前一次的评分
+                      </p>
                     </div>
-                    <input
-                      type="range"
-                      min="1"
-                      max="10"
-                      value={scoreValue}
-                      onChange={(e) => setScoreValue(parseInt(e.target.value))}
-                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                    />
-                    <div className="flex justify-between text-xs text-gray-500 mt-1">
-                      <span>1分</span>
-                      <span>5分</span>
-                      <span>10分</span>
+                  ) : (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
+                      <p className="text-yellow-700">房主尚未设置评分标准</p>
+                      <p className="text-sm text-yellow-600 mt-1">请等待房主设置评分标准后再进行评分</p>
                     </div>
-                    <button
-                      onClick={handleSubmitScore}
-                      className="mt-4 w-full px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600"
-                    >
-                      提交评分
-                    </button>
-                    <p className="text-xs text-gray-500 mt-2 text-center">
-                      同一张图片重复提交会覆盖前一次的评分
-                    </p>
-                  </div>
+                  )}
                 </div>
               )}
             </div>
@@ -344,19 +416,33 @@ export default function RoomDetail() {
               {scoreRound ? (
                 <div className="space-y-3 max-h-96 overflow-y-auto">
                   {scoreRound.scoreboard.map((entry, index) => (
-                    <div key={entry.photo_id} className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded">
-                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                        index === 0 ? 'bg-yellow-100 text-yellow-700' :
-                        index === 1 ? 'bg-gray-100 text-gray-700' :
-                        index === 2 ? 'bg-orange-100 text-orange-700' :
-                        'bg-gray-50 text-gray-600'
-                      }`}>
-                        {index + 1}
+                    <div key={entry.photo_id} className="p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                          index === 0 ? 'bg-yellow-100 text-yellow-700' :
+                          index === 1 ? 'bg-gray-100 text-gray-700' :
+                          index === 2 ? 'bg-orange-100 text-orange-700' :
+                          'bg-gray-50 text-gray-600'
+                        }`}>
+                          {index + 1}
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">{entry.uploader_name || '未知用户'}</p>
+                          <p className="text-xs text-gray-500">总分: {entry.total_score.toFixed(1)}</p>
+                        </div>
                       </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">{entry.uploader_name || '未知用户'}</p>
-                        <p className="text-xs text-gray-500">{entry.total_score.toFixed(1)} 分</p>
-                      </div>
+                      
+                      {/* 各标准得分 */}
+                      {Object.keys(entry.criteria_scores).length > 0 && (
+                        <div className="space-y-1 text-xs">
+                          {Object.entries(entry.criteria_scores).map(([criteria, score]) => (
+                            <div key={criteria} className="flex justify-between">
+                              <span className="text-gray-600">{criteria}</span>
+                              <span className="font-medium">{score.toFixed(1)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

@@ -99,6 +99,7 @@ fn create_app(pool: SqlitePool, config: Config) -> Router {
         .route("/api/photos/:photo_id/tags", get(tag::get_photo_tags))
         // 评分相关
         .route("/api/scores", post(score::submit_score))
+        .route("/api/photos/:photo_id/scores", get(score::get_user_scores_for_photo))
         .route("/api/rooms/:room_id/scoreboard", get(score::get_scoreboard))
         .route("/api/rooms/:room_id/end-round", post(score::end_round))
         .route(

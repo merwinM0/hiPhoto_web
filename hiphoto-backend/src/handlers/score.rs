@@ -315,3 +315,63 @@ pub async fn start_new_round(
         "round_number": round_number
     })))
 }
+
+pub async fn get_user_scores_for_photo(
+    State((pool, _config)): State<(SqlitePool, Config)>,
+    Extension(auth_user): Extension<AuthUser>,
+    Path(photo_id): Path<String>,
+) -> Result<Json<Vec<ScoreResponse>>> {
+    // 获取当前轮次
+    let photo = sqlx::query_as::<_, Photo>(
+        "SELECT * FROM photos WHERE id = ?"
+    )
+    .bind(&photo_id)
+    .fetch_one(&pool)
+    .await?;
+
+    let round = sqlx::query_as::<_, ScoreRound>(
+        "SELECT * FROM score_rounds WHERE room_id = ? AND status = 'active' ORDER BY round_number DESC LIMIT 1"
+    )
+    .bind(&photo.room_id)
+    .fetch_optional(&pool)
+    .await?;
+
+    let round_number = match round {
+        Some(r) => r.round_number,
+        None => 1,
+    };
+
+    // 获取用户对该照片的评分
+    let scores = sqlx::query_as::<_, Score>(
+        "SELECT * FROM scores WHERE photo_id = ? AND voter_id = ? AND round_number = ?"
+    )
+    .bind(&photo_id)
+    .bind(&auth_user.user_id)
+    .bind(round_number)
+    .fetch_all(&pool)
+    .await?;
+
+    let mut responses = Vec::new();
+    for score in scores {
+        let voter_name: Option<String> = sqlx::query_scalar(
+            "SELECT username FROM users WHERE id = ?"
+        )
+        .bind(&score.voter_id)
+        .fetch_optional(&pool)
+        .await?
+        .flatten();
+
+        responses.push(ScoreResponse {
+            id: score.id,
+            photo_id: score.photo_id,
+            voter_id: score.voter_id,
+            voter_name,
+            criteria_type: score.criteria_type,
+            score: score.score,
+            round_number: score.round_number,
+            created_at: score.created_at,
+        });
+    }
+
+    Ok(Json(responses))
+}

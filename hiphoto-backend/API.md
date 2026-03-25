@@ -370,7 +370,8 @@ CREATE TABLE IF NOT EXISTS score_rounds (
         "description": "string | null"
       }
     ]
-  } | null
+  } | null,
+  "is_public": "boolean | null"
 }
 ```
 - **Response**: Same as Get Room Details
@@ -465,6 +466,37 @@ CREATE TABLE IF NOT EXISTS score_rounds (
   "message": "Left room successfully"
 }
 ```
+
+### 获取待处理申请
+- **方法**: GET
+- **端点**: `/api/rooms/pending-requests`
+- **请求头**: `Authorization: Bearer <token>`
+- **Response**:
+```json
+[
+  {
+    "room_id": "string",
+    "room_name": "string",
+    "user_id": "string",
+    "username": "string | null",
+    "status": "string",
+    "created_at": "string | null"
+  }
+]
+```
+- **说明**: 获取当前用户作为房主的房间的所有待处理加入申请
+
+### 获取待处理申请数量
+- **方法**: GET
+- **端点**: `/api/rooms/pending-request-count`
+- **请求头**: `Authorization: Bearer <token>`
+- **Response**:
+```json
+{
+  "count": number
+}
+```
+- **说明**: 获取当前用户作为房主的房间的待处理申请数量，用于消息提醒
 
 ## 照片
 
@@ -640,6 +672,46 @@ CREATE TABLE IF NOT EXISTS score_rounds (
 
 ## 评分
 
+### 评分系统说明
+HiPhoto的评分系统支持多标准评分：
+1. **评分标准设置**：房主可以设置多个评分标准，每个标准包含名称、评分上限和描述
+2. **多标准评分**：用户需要为每个标准单独评分
+3. **综合得分**：系统自动计算每个标准的平均分，并汇总为总分
+4. **重复提交**：同一用户对同一照片的同一标准重复评分会覆盖之前的评分
+5. **评分轮次**：支持多轮评分，房主可以结束当前轮次并开始新一轮
+
+### 评分流程
+1. 房主在房间设置中定义评分标准
+2. 用户查看照片并为每个标准评分
+3. 系统计算每个标准的平均分
+4. 评分榜显示总分和各标准得分
+5. 房主可以结束当前轮次，开始新一轮评分
+
+### 评分标准示例
+```json
+{
+  "scoring_criteria": {
+    "criteria": [
+      {
+        "name": "构图",
+        "max_score": 10,
+        "description": "照片的构图是否合理，主体是否突出"
+      },
+      {
+        "name": "色彩",
+        "max_score": 10,
+        "description": "色彩搭配是否和谐，饱和度是否适中"
+      },
+      {
+        "name": "创意",
+        "max_score": 20,
+        "description": "照片是否有创意，是否给人留下深刻印象"
+      }
+    ]
+  }
+}
+```
+
 ### 提交评分
 - **方法**: POST
 - **端点**: `/api/scores`
@@ -665,6 +737,27 @@ CREATE TABLE IF NOT EXISTS score_rounds (
   "created_at": "string"
 }
 ```
+
+### 获取用户对照片的评分
+- **方法**: GET
+- **端点**: `/api/photos/:photo_id/scores`
+- **请求头**: `Authorization: Bearer <token>`
+- **Response**:
+```json
+[
+  {
+    "id": "string",
+    "photo_id": "string",
+    "voter_id": "string",
+    "voter_name": "string | null",
+    "criteria_type": "string",
+    "score": number,
+    "round_number": number,
+    "created_at": "string"
+  }
+]
+```
+- **说明**: 获取当前用户对指定照片的所有评分（按评分标准分类）
 
 ### 获取排行榜
 - **方法**: GET
