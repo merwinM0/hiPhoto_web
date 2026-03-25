@@ -68,6 +68,7 @@ pub struct UpdateRoomRequest {
     pub description: Option<String>,
     pub upload_limit: Option<i32>,
     pub scoring_criteria: Option<ScoringCriteria>,
+    pub is_public: Option<bool>,
 }
 
 #[derive(Debug, Deserialize)]

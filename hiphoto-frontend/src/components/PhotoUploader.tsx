@@ -3,52 +3,71 @@ import { useState, useRef } from 'react'
 interface PhotoUploaderProps {
   onUpload: (base64: string) => Promise<void>
   disabled?: boolean
+  maxFiles?: number
 }
 
-export default function PhotoUploader({ onUpload, disabled }: PhotoUploaderProps) {
-  const [preview, setPreview] = useState<string | null>(null)
+export default function PhotoUploader({ onUpload, disabled, maxFiles = 9 }: PhotoUploaderProps) {
+  const [previews, setPreviews] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+    const files = Array.from(e.target.files || [])
+    
+    if (files.length === 0) return
 
-    // 验证文件类型
-    if (!file.type.startsWith('image/')) {
-      setError('请选择图片文件')
+    // 验证文件数量
+    if (previews.length + files.length > maxFiles) {
+      setError(`最多只能上传 ${maxFiles} 张图片`)
       return
     }
 
-    // 验证文件大小 (10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      setError('图片大小不能超过 10MB')
+    // 验证文件类型和大小
+    const invalidFiles = files.filter(file => {
+      return !file.type.startsWith('image/') || file.size > 10 * 1024 * 1024
+    })
+
+    if (invalidFiles.length > 0) {
+      setError('请选择有效的图片文件（支持格式：JPG、PNG等，单张不超过10MB）')
       return
     }
 
     setError(null)
 
-    // 读取文件并转换为 base64
-    const reader = new FileReader()
-    reader.onload = (event) => {
-      const base64 = event.target?.result as string
-      setPreview(base64)
-    }
-    reader.readAsDataURL(file)
+    // 读取所有文件
+    const newPreviews: string[] = []
+    let loadedCount = 0
+
+    files.forEach((file, index) => {
+      const reader = new FileReader()
+      reader.onload = (event) => {
+        const base64 = event.target?.result as string
+        newPreviews[index] = base64
+        loadedCount++
+
+        if (loadedCount === files.length) {
+          setPreviews(prev => [...prev, ...newPreviews])
+        }
+      }
+      reader.readAsDataURL(file)
+    })
   }
 
   const handleUpload = async () => {
-    if (!preview) return
+    if (previews.length === 0) return
 
     setLoading(true)
     setError(null)
 
     try {
-      // 移除 data:image/xxx;base64, 前缀
-      const base64Data = preview.split(',')[1]
-      await onUpload(base64Data)
-      setPreview(null)
+      // 依次上传所有图片
+      for (const preview of previews) {
+        const base64Data = preview.split(',')[1]
+        await onUpload(base64Data)
+      }
+      
+      setPreviews([])
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
       }
@@ -60,11 +79,15 @@ export default function PhotoUploader({ onUpload, disabled }: PhotoUploaderProps
   }
 
   const handleCancel = () => {
-    setPreview(null)
+    setPreviews([])
     setError(null)
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
+  }
+
+  const removePreview = (index: number) => {
+    setPreviews(prev => prev.filter((_, i) => i !== index))
   }
 
   return (
@@ -77,9 +100,10 @@ export default function PhotoUploader({ onUpload, disabled }: PhotoUploaderProps
         disabled={disabled || loading}
         className="hidden"
         id="photo-upload"
+        multiple
       />
 
-      {!preview ? (
+      {previews.length === 0 ? (
         <label
           htmlFor="photo-upload"
           className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
@@ -101,22 +125,55 @@ export default function PhotoUploader({ onUpload, disabled }: PhotoUploaderProps
               d="M12 6v6m0 0v6m0-6h6m-6 0H6"
             />
           </svg>
-          <p className="mt-2 text-sm text-gray-500">点击选择图片</p>
+          <p className="mt-2 text-sm text-gray-500">点击选择图片（最多 {maxFiles} 张）</p>
+          <p className="text-xs text-gray-400 mt-1">支持批量选择</p>
         </label>
       ) : (
-        <div className="space-y-3">
-          <img
-            src={preview}
-            alt="Preview"
-            className="w-full max-h-64 object-contain rounded-lg"
-          />
+        <div className="space-y-4">
+          {/* 预览网格 */}
+          <div className="grid grid-cols-3 gap-3">
+            {previews.map((preview, index) => (
+              <div key={index} className="relative aspect-square rounded-lg overflow-hidden bg-gray-100">
+                <img
+                  src={preview}
+                  alt={`Preview ${index + 1}`}
+                  className="w-full h-full object-cover"
+                />
+                <button
+                  onClick={() => removePreview(index)}
+                  className="absolute top-1 right-1 w-6 h-6 bg-black bg-opacity-50 text-white rounded-full hover:bg-opacity-70"
+                >
+                  ×
+                </button>
+                <div className="absolute bottom-1 left-1 right-1 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
+                  图片 {index + 1}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* 上传状态 */}
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-gray-600">
+              已选择 {previews.length} / {maxFiles} 张图片
+            </div>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={previews.length >= maxFiles}
+              className="text-sm text-primary-600 hover:text-primary-700 disabled:text-gray-400"
+            >
+              + 添加更多
+            </button>
+          </div>
+
+          {/* 操作按钮 */}
           <div className="flex gap-2">
             <button
               onClick={handleUpload}
               disabled={loading}
               className="flex-1 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 disabled:opacity-50"
             >
-              {loading ? '上传中...' : '确认上传'}
+              {loading ? `上传中... (${previews.length} 张)` : `确认上传 (${previews.length} 张)`}
             </button>
             <button
               onClick={handleCancel}
@@ -130,7 +187,9 @@ export default function PhotoUploader({ onUpload, disabled }: PhotoUploaderProps
       )}
 
       {error && (
-        <p className="text-sm text-red-500">{error}</p>
+        <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm">
+          {error}
+        </div>
       )}
     </div>
   )

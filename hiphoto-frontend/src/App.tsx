@@ -6,7 +6,7 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import VerifyEmail from './pages/VerifyEmail'
 import RoomList from './pages/RoomList'
-import RoomDetail from './pages/RoomDetail'
+import RoomDetail from './pages/RoomDetailNew'
 import PhotoDetail from './pages/PhotoDetail'
 
 function App() {
